@@ -41,6 +41,9 @@ export default class TrayManager extends EventEmitter {
     this.focused = false
     this.initialized = false
 
+    // 确保初始状态为未下载状态
+    logger.info('[TrayManager] 初始化状态:', { status: this.status, platform: platform })
+
     this.init()
   }
 
@@ -86,7 +89,9 @@ export default class TrayManager extends EventEmitter {
 
   loadImagesForWindows () {
     this.normalIcon = this.getFromCacheOrCreateImage('mo-tray-colorful-normal.png')
-    this.activeIcon = this.getFromCacheOrCreateImage('mo-tray-colorful-active.png')
+    this.activeIcon = this.normalIcon // 使用相同的图标，因为用户要求永远显示未下载状态
+    this.inverseNormalIcon = this.normalIcon
+    this.inverseActiveIcon = this.activeIcon
   }
 
   loadImagesForLinux () {
@@ -150,7 +155,7 @@ export default class TrayManager extends EventEmitter {
     // tray.setPressedImage(inverseIcon)
 
     if (!this.macOS) {
-      tray.setToolTip('Motrix')
+      tray.setToolTip('LinkCore Download Manager')
     }
   }
 
@@ -244,16 +249,17 @@ export default class TrayManager extends EventEmitter {
       return { icon: this.normalIcon }
     }
 
-    const { focused, status, systemTheme } = this
+    const { focused, systemTheme } = this
 
-    const icon = status ? this.activeIcon : this.normalIcon
+    // 永远使用未下载状态图标
+    const icon = this.normalIcon
     if (systemTheme === APP_THEME.DARK) {
       return {
         icon
       }
     }
 
-    const inverseIcon = status ? this.inverseActiveIcon : this.inverseNormalIcon
+    const inverseIcon = this.inverseNormalIcon
 
     return {
       icon: focused ? inverseIcon : icon
@@ -326,10 +332,11 @@ export default class TrayManager extends EventEmitter {
     this.renderTray()
   }
 
+  // 移除下载状态变化处理，永远保持未下载状态
   handleDownloadStatusChange (status) {
-    this.status = status
-
-    this.renderTray()
+    // 忽略状态变化，永远保持未下载状态
+    // this.status = status
+    // this.renderTray()
   }
 
   async handleSpeedChange ({ uploadSpeed, downloadSpeed }) {

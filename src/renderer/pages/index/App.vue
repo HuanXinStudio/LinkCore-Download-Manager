@@ -25,7 +25,7 @@
   import { getLocaleManager } from '@/components/Locale'
 
   export default {
-    name: 'motrix-app',
+    name: 'LinkCore Download Manager-app',
     components: {
       [DynamicTray.name]: DynamicTray,
       [EngineClient.name]: EngineClient,

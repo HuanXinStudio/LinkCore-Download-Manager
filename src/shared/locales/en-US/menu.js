@@ -1,5 +1,5 @@
 export default {
-  'app': 'Motrix',
+  'app': 'LinkCore Download Manager',
   'file': 'File',
   'task': 'Task',
   'edit': 'Edit',

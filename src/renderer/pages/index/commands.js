@@ -35,10 +35,6 @@ const updateTrayFocused = (payload = {}) => {
   store.dispatch('app/updateTrayFocused', focused)
 }
 
-const showAboutPanel = () => {
-  store.dispatch('app/showAboutPanel')
-}
-
 const addTask = (payload = {}) => {
   const {
     type = ADD_TASK_TYPE.URI,
@@ -179,7 +175,6 @@ const fetchPreference = () => {
 
 commands.register('application:task-list', navigateTaskList)
 commands.register('application:preferences', navigatePreferences)
-commands.register('application:about', showAboutPanel)
 
 commands.register('application:new-task', addTask)
 commands.register('application:new-bt-task', showAddBtTask)

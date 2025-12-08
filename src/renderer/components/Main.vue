@@ -5,7 +5,6 @@
     <mo-floating-bar />
     <mo-speedometer />
     <mo-add-task :visible="addTaskVisible" :type="addTaskType" />
-    <mo-about-panel :visible="aboutPanelVisible" />
     <mo-task-detail
       :visible="taskDetailVisible"
       :gid="currentTaskGid"
@@ -19,7 +18,6 @@
 
 <script>
   import { mapState } from 'vuex'
-  import AboutPanel from '@/components/About/AboutPanel'
   import Aside from '@/components/Aside/Index'
   import FloatingBar from '@/components/BottomBar/FloatingBar'
   import Speedometer from '@/components/Speedometer/Speedometer'
@@ -30,7 +28,6 @@
   export default {
     name: 'mo-main',
     components: {
-      [AboutPanel.name]: AboutPanel,
       [Aside.name]: Aside,
       [FloatingBar.name]: FloatingBar,
       [Speedometer.name]: Speedometer,
@@ -40,7 +37,6 @@
     },
     computed: {
       ...mapState('app', {
-        aboutPanelVisible: state => state.aboutPanelVisible,
         addTaskVisible: state => state.addTaskVisible,
         addTaskType: state => state.addTaskType
       }),

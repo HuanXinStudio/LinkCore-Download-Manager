@@ -1,7 +1,6 @@
 <template>
   <el-aside width="78px" :class="['aside', 'hidden-sm-and-down', { 'draggable': asideDraggable }]" :style="vibrancy">
     <div class="aside-inner">
-      <mo-logo-mini />
       <ul class="menu top-menu">
         <li
           @click="nav('/task')"
@@ -19,13 +18,6 @@
         >
           <mo-icon name="menu-preference" width="20" height="20" />
         </li>
-        <li
-          @click="showAboutPanel"
-          class="non-draggable"
-          :class="{ active: isAboutPanelVisible }"
-        >
-          <mo-icon name="menu-about" width="20" height="20" />
-        </li>
       </ul>
     </div>
   </el-aside>
@@ -34,24 +26,17 @@
 <script>
   import is from 'electron-is'
   import { mapState } from 'vuex'
-  import LogoMini from '@/components/Logo/LogoMini'
   import '@/components/Icons/menu-task'
   import '@/components/Icons/menu-preference'
-  import '@/components/Icons/menu-about'
 
   export default {
     name: 'mo-aside',
     components: {
-      [LogoMini.name]: LogoMini
     },
     computed: {
       ...mapState('app', {
-        currentPage: state => state.currentPage,
-        aboutPanelVisible: state => state.aboutPanelVisible
+        currentPage: state => state.currentPage
       }),
-      isAboutPanelVisible () {
-        return this.aboutPanelVisible
-      },
       asideDraggable () {
         return is.macOS()
       },
@@ -64,9 +49,6 @@
       }
     },
     methods: {
-      showAboutPanel () {
-        this.$store.dispatch('app/showAboutPanel')
-      },
       nav (page) {
         this.$router.push({
           path: page
@@ -83,9 +65,6 @@
   display: flex;
   height: 100%;
   flex-flow: column;
-}
-.logo-mini {
-  margin-top: 40px;
 }
 .menu {
   list-style: none;

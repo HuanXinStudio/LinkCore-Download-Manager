@@ -11,7 +11,6 @@ const state = {
   systemTheme: getSystemTheme(),
   trayFocused: false,
   currentPage: '/task',
-  aboutPanelVisible: false,
   engineInfo: {
     version: '',
     enabledFeatures: []
@@ -45,9 +44,6 @@ const mutations = {
   },
   UPDATE_CURRENT_PAGE (state, page) {
     state.currentPage = page
-  },
-  UPDATE_ABOUT_PANEL_VISIBLE (state, visible) {
-    state.aboutPanelVisible = visible
   },
   UPDATE_ENGINE_INFO (state, engineInfo) {
     state.engineInfo = { ...state.engineInfo, ...engineInfo }
@@ -112,12 +108,6 @@ const actions = {
   },
   updateCurrentPage ({ commit }, page) {
     commit('UPDATE_CURRENT_PAGE', page)
-  },
-  showAboutPanel ({ commit }) {
-    commit('UPDATE_ABOUT_PANEL_VISIBLE', true)
-  },
-  hideAboutPanel ({ commit }) {
-    commit('UPDATE_ABOUT_PANEL_VISIBLE', false)
   },
   fetchEngineInfo ({ commit }) {
     api.getVersion()
