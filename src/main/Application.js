@@ -1013,11 +1013,14 @@ export default class Application extends EventEmitter {
       const systemConfig = this.configManager.getSystemConfig()
       const userConfig = this.configManager.getUserConfig()
       const context = this.context.get()
+      // 获取应用版本号，来自package.json
+      const appVersion = require('../../package.json').version
 
       const result = {
         ...systemConfig,
         ...userConfig,
-        ...context
+        ...context,
+        version: appVersion
       }
       return result
     })

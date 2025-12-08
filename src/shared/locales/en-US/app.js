@@ -11,6 +11,7 @@ export default {
   'update-not-available-message': 'You are up-to-date!',
   'update-downloaded-message': 'Ready to install...',
   'update-error-message': 'Update Error',
+  'update-timeout-message': 'Update check timed out, please try again later',
   'engine-damaged-message': 'The engine is damaged, please reinstall : (',
   'engine-missing-message': 'The engine is missing, please reinstall : (',
   'system-error-title': 'System Error',

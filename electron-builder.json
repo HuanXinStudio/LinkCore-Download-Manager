@@ -190,12 +190,10 @@
       }
     },
     "publish": [
-      {
-        "provider": "generic",
-        "url": "https://dl.motrix.app/releases/"
-      },
-      {
-        "provider": "github"
-      }
-    ]
+  {
+    "provider": "github",
+    "owner": "HuanXinStudio",
+    "repo": "LinkCore-Download-Manager"
+  }
+]
   }

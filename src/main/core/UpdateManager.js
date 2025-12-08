@@ -88,10 +88,20 @@ export default class UpdateManager extends EventEmitter {
   checkingForUpdate () {
     this.isChecking = true
     this.emit('checking')
+    // 向所有窗口发送检查更新事件
+    const windows = global.application?.windowManager?.getWindowList() || []
+    windows.forEach(window => {
+      window.webContents.send('checking-for-update')
+    })
   }
 
   updateAvailable (event, info) {
     this.emit('update-available', info)
+    // 向所有窗口发送更新可用事件
+    const windows = global.application?.windowManager?.getWindowList() || []
+    windows.forEach(window => {
+      window.webContents.send('update-available')
+    })
     dialog.showMessageBox({
       type: 'info',
       title: this.i18n.t('app.check-for-updates-title'),
@@ -110,6 +120,11 @@ export default class UpdateManager extends EventEmitter {
   updateNotAvailable (event, info) {
     this.isChecking = false
     this.emit('update-not-available', info)
+    // 向所有窗口发送更新不可用事件
+    const windows = global.application?.windowManager?.getWindowList() || []
+    windows.forEach(window => {
+      window.webContents.send('update-not-available')
+    })
     if (this.autoCheckData.userCheck) {
       dialog.showMessageBox({
         title: this.i18n.t('app.check-for-updates-title'),
@@ -153,6 +168,11 @@ export default class UpdateManager extends EventEmitter {
   updateError (event, error) {
     this.isChecking = false
     this.emit('update-error', error)
+    // 向所有窗口发送更新错误事件
+    const windows = global.application?.windowManager?.getWindowList() || []
+    windows.forEach(window => {
+      window.webContents.send('update-error')
+    })
     const msg = (error == null)
       ? this.i18n.t('app.update-error-message')
       : (error.stack || error).toString()

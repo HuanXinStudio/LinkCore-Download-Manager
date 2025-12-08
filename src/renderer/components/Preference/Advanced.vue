@@ -801,6 +801,7 @@
         })
       }
     },
+
     beforeRouteLeave (to, from, next) {
       // Since we now use auto-save on changes, there's no need to check for unsaved changes
       changedConfig.advanced = {}
