@@ -1,14 +1,14 @@
 # LinkCore Download Manager (联芯下载管理器)
 
 <p>
-  <a href="https://github.com/your-username/LinkCore-Download-Manager">
+  <a href="https://github.com/HuanXinStudio/-LinkCore-Download-Manager">
     <img src="./static/512x512.png" width="256" alt="LinkCore Download Manager 图标" />
   </a>
 </p>
 
 ## 基于 Motrix 二次开发的全功能下载管理器
 
-[![GitHub release](https://img.shields.io/github/v/release/your-username/LinkCore-Download-Manager.svg)](https://github.com/your-username/LinkCore-Download-Manager/releases) ![Total Downloads](https://img.shields.io/github/downloads/your-username/LinkCore-Download-Manager/total.svg) ![Support Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
+[![GitHub release](https://img.shields.io/github/v/release/HuanXinStudio/-LinkCore-Download-Manager.svg)](https://github.com/HuanXinStudio/-LinkCore-Download-Manager/releases) ![Total Downloads](https://img.shields.io/github/downloads/HuanXinStudio/-LinkCore-Download-Manager/total.svg) ![Support Platforms](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 
 [English](./README.md) | 简体中文
 
@@ -47,7 +47,7 @@
 
 下载最新版本的安装包进行安装：
 
-1. 前往 [GitHub Releases](https://github.com/your-username/LinkCore-Download-Manager/releases) 页面
+1. 前往 [GitHub Releases](https://github.com/HuanXinStudio/-LinkCore-Download-Manager/releases) 页面
 2. 下载 `LinkCore-Download-Manager-Setup-x.y.z.exe`
 3. 运行安装程序完成安装
 
@@ -76,14 +76,14 @@ sudo snap install linkcore-download-manager
 
 ## 🖥 界面预览
 
-![linkcore-screenshot-task.png](./screenshots/motrix-task-list-downloading-light@2x.png)
+![linkcore-screenshot-task.png](./screenshots/linkcore-screenshot-task.png)
 
 ## 🛠 开发与构建
 
 ### 克隆代码
 
 ```bash
-git clone https://github.com/your-username/LinkCore-Download-Manager.git
+git clone https://github.com/HuanXinStudio/-LinkCore-Download-Manager.git
 cd LinkCore-Download-Manager
 ```
 
@@ -131,8 +131,8 @@ yarn run build
 
 ## 📞 联系我们
 
-- 项目主页：https://github.com/your-username/LinkCore-Download-Manager
-- 问题反馈：https://github.com/your-username/LinkCore-Download-Manager/issues
+- 项目主页：https://github.com/HuanXinStudio/-LinkCore-Download-Manager
+- 问题反馈：https://github.com/HuanXinStudio/-LinkCore-Download-Manager/issues
 
 ---
 

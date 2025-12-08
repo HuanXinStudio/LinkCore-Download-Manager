@@ -3,8 +3,6 @@
     {
       "id": "menu.app",
       "submenu": [
-        { "id": "app.about", "command": "application:about", "command-before": "application:show?page=index" },
-        { "type": "separator" },
         { "id": "app.preferences", "command": "application:preferences" },
         { "id": "app.check-for-updates", "command": "application:check-for-updates" },
         { "id": "app.hide", "role": "hide" },

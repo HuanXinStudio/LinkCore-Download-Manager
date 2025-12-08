@@ -68,6 +68,11 @@ export default class WindowManager extends EventEmitter {
       result.attrs.icon = join(__static, './512x512.png')
     }
 
+    // Set window icon for Windows platform
+    if (is.windows()) {
+      result.attrs.icon = join(__static, './L_ico_256x256.ico')
+    }
+
     return result
   }
 
