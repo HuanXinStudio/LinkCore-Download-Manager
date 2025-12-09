@@ -110,7 +110,7 @@ sudo apt-get install -f
 ## �️ Screenshots
 
 <p align="center">
-  <img src="./screenshots/linkcore-screenshot-task.png" alt="Task Management Interface" width="600" />
+  <img src="./screenshots/linkcore-screenshot-task.png" alt="Task Management Interface" width="1100" />
   <br>
   <em>Task Management Interface</em>
 </p>
