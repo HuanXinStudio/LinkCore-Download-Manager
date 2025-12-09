@@ -110,7 +110,7 @@ sudo apt-get install -f
 ## 🖥️ 界面截图
 
 <p align="center">
-  <img src="./screenshots/linkcore-screenshot-task.png" alt="任务管理界面" width="600" />
+  <img src="./screenshots/linkcore-screenshot-task.png" alt="任务管理界面" width="1100" />
   <br>
   <em>任务管理界面</em>
 </p>
