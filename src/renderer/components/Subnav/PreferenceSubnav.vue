@@ -35,7 +35,7 @@
         :class="{ 'update-available': updateAvailable, 'is-checking': isChecking }"
         :disabled="isChecking"
         >
-        <span>{{ appVersion }}</span>
+        <span>{{ updateAvailable ? `新版本 ${newVersion}` : appVersion }}</span>
       </li>
     </ul>
   </nav>
@@ -57,6 +57,7 @@
     data () {
       return {
         appVersion: '',
+        newVersion: '',
         updateAvailable: false,
         isChecking: false
       }
@@ -76,12 +77,14 @@
       }
 
       // 监听更新事件
-      this.$electron.ipcRenderer.on('update-available', () => {
+      this.$electron.ipcRenderer.on('update-available', (event, version) => {
         this.updateAvailable = true
+        this.newVersion = version
       })
 
       this.$electron.ipcRenderer.on('update-not-available', () => {
         this.updateAvailable = false
+        this.newVersion = ''
       })
     },
     beforeDestroy () {
@@ -136,11 +139,15 @@
         const onUpdateNotAvailable = () => {
           this.showMessage('success', this.$t('app.update-not-available-message'))
           this.isChecking = false
+          this.updateAvailable = false
+          this.newVersion = ''
         }
 
-        const onUpdateAvailable = () => {
+        const onUpdateAvailable = (event, version) => {
           this.showMessage('info', this.$t('app.update-available-message'))
           this.isChecking = false
+          this.updateAvailable = true
+          this.newVersion = version
         }
 
         // 使用once监听事件，确保事件只处理一次
@@ -187,7 +194,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   border: 1px solid #dcdfe6;
-  border-radius: 4px;
+  border-radius: 12px;
   padding: 8px 12px;
   margin-top: 10px;
   background-color: transparent;
@@ -204,6 +211,8 @@
     font-weight: bold;
     border-color: #c2e7b0;
     background-color: transparent;
+    opacity: 1;
+    animation: pulse-green 1s infinite;
 
     &:hover {
       background-color: transparent;
@@ -245,6 +254,18 @@
   }
   100% {
     box-shadow: 0 0 0 0 rgba(64, 158, 255, 0);
+  }
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(103, 194, 58, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(103, 194, 58, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(103, 194, 58, 0);
   }
 }
 </style>

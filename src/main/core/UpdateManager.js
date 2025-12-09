@@ -97,24 +97,13 @@ export default class UpdateManager extends EventEmitter {
 
   updateAvailable (event, info) {
     this.emit('update-available', info)
-    // 向所有窗口发送更新可用事件
+    // 向所有窗口发送更新可用事件，包含新版本号
     const windows = global.application?.windowManager?.getWindowList() || []
     windows.forEach(window => {
-      window.webContents.send('update-available')
+      window.webContents.send('update-available', info.version)
     })
-    dialog.showMessageBox({
-      type: 'info',
-      title: this.i18n.t('app.check-for-updates-title'),
-      message: this.i18n.t('app.update-available-message'),
-      buttons: [this.i18n.t('app.yes'), this.i18n.t('app.no')],
-      cancelId: 1
-    }).then(({ response }) => {
-      if (response === 0) {
-        this.updater.downloadUpdate()
-      } else {
-        this.emit('update-cancelled', info)
-      }
-    })
+    // Download update automatically when available
+    this.updater.downloadUpdate()
   }
 
   updateNotAvailable (event, info) {
@@ -125,12 +114,6 @@ export default class UpdateManager extends EventEmitter {
     windows.forEach(window => {
       window.webContents.send('update-not-available')
     })
-    if (this.autoCheckData.userCheck) {
-      dialog.showMessageBox({
-        title: this.i18n.t('app.check-for-updates-title'),
-        message: this.i18n.t('app.update-not-available-message')
-      })
-    }
   }
 
   /**
@@ -149,15 +132,12 @@ export default class UpdateManager extends EventEmitter {
   updateDownloaded (event, info) {
     this.emit('update-downloaded', info)
     this.updater.logger.log(`Update Downloaded: ${info}`)
-    dialog.showMessageBox({
-      title: this.i18n.t('app.check-for-updates-title'),
-      message: this.i18n.t('app.update-downloaded-message')
-    }).then(_ => {
-      this.isChecking = false
-      this.emit('will-updated')
-      setTimeout(() => {
-        this.updater.quitAndInstall()
-      }, 200)
+    this.isChecking = false
+    this.emit('will-updated')
+    // Notify renderer process about the downloaded update
+    const windows = global.application?.windowManager?.getWindowList() || []
+    windows.forEach(window => {
+      window.webContents.send('update-downloaded')
     })
   }
 
