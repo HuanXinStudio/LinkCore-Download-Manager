@@ -30,10 +30,9 @@
         <span>{{ $t('preferences.lab') }}</span>
       </li>
       <li
-        @click="checkForUpdates"
+        @click="isChecking ? null : checkForUpdates()"
         class="version-item"
         :class="{ 'update-available': updateAvailable, 'is-checking': isChecking }"
-        :disabled="isChecking"
         >
         <span>{{ updateAvailable ? `新版本 ${newVersion}` : appVersion }}</span>
       </li>
@@ -45,6 +44,7 @@
   import '@/components/Icons/preference-basic'
   import '@/components/Icons/preference-advanced'
   import '@/components/Icons/preference-lab'
+  import { mapState, mapActions } from 'vuex'
 
   export default {
     name: 'mo-preference-subnav',
@@ -58,13 +58,16 @@
       return {
         appVersion: '',
         newVersion: '',
-        updateAvailable: false,
-        isChecking: false
+        updateAvailable: false
       }
     },
     computed: {
+      ...mapState('app', ['isCheckingUpdate']),
       title () {
         return this.$t('subnav.preferences')
+      },
+      isChecking () {
+        return this.isCheckingUpdate
       }
     },
     async mounted () {
@@ -77,22 +80,35 @@
       }
 
       // 监听更新事件
+      this.$electron.ipcRenderer.on('checking-for-update', () => {
+        this.updateCheckingUpdate(true)
+      })
+
       this.$electron.ipcRenderer.on('update-available', (event, version) => {
         this.updateAvailable = true
         this.newVersion = version
+        this.updateCheckingUpdate(false)
       })
 
       this.$electron.ipcRenderer.on('update-not-available', () => {
         this.updateAvailable = false
         this.newVersion = ''
+        this.updateCheckingUpdate(false)
+      })
+
+      this.$electron.ipcRenderer.on('update-error', () => {
+        this.updateCheckingUpdate(false)
       })
     },
     beforeDestroy () {
       // 移除事件监听
+      this.$electron.ipcRenderer.removeAllListeners('checking-for-update')
       this.$electron.ipcRenderer.removeAllListeners('update-available')
       this.$electron.ipcRenderer.removeAllListeners('update-not-available')
+      this.$electron.ipcRenderer.removeAllListeners('update-error')
     },
     methods: {
+      ...mapActions('app', ['updateCheckingUpdate']),
       nav (category = 'basic') {
         this.$router.push({
           path: `/preference/${category}`
@@ -122,10 +138,10 @@
       // 检查更新
       checkForUpdates () {
         // 如果正在检查，直接返回
-        if (this.isChecking) return
+        if (this.isCheckingUpdate) return
 
         // 设置检查状态
-        this.isChecking = true
+        this.updateCheckingUpdate(true)
 
         // 显示检查中消息
         this.showMessage('info', this.$t('app.checking-for-updates'))
@@ -133,19 +149,19 @@
         // 创建临时事件监听器，使用once确保只触发一次
         const onUpdateError = () => {
           this.showMessage('error', this.$t('app.update-error-message'))
-          this.isChecking = false
+          this.updateCheckingUpdate(false)
         }
 
         const onUpdateNotAvailable = () => {
           this.showMessage('success', this.$t('app.update-not-available-message'))
-          this.isChecking = false
+          this.updateCheckingUpdate(false)
           this.updateAvailable = false
           this.newVersion = ''
         }
 
         const onUpdateAvailable = (event, version) => {
           this.showMessage('info', this.$t('app.update-available-message'))
-          this.isChecking = false
+          this.updateCheckingUpdate(false)
           this.updateAvailable = true
           this.newVersion = version
         }
@@ -165,7 +181,7 @@
 
           // 显示超时消息
           this.showMessage('error', this.$t('app.update-timeout-message') || '更新检查超时，请稍后重试')
-          this.isChecking = false
+          this.updateCheckingUpdate(false)
         }, 10000) // 10秒超时
 
         // 监听任何更新事件，清除超时

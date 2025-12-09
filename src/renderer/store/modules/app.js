@@ -29,7 +29,8 @@ const state = {
   addTaskUrl: '',
   addTaskTorrents: [],
   addTaskOptions: {},
-  progress: 0
+  progress: 0,
+  isCheckingUpdate: false
 }
 
 const getters = {
@@ -96,6 +97,9 @@ const mutations = {
   },
   UPDATE_PROGRESS (state, progress) {
     state.progress = progress
+  },
+  UPDATE_CHECKING_UPDATE (state, isChecking) {
+    state.isCheckingUpdate = isChecking
   }
 }
 
@@ -195,6 +199,9 @@ const actions = {
         }
         commit('UPDATE_PROGRESS', progress)
       })
+  },
+  updateCheckingUpdate ({ commit }, isChecking) {
+    commit('UPDATE_CHECKING_UPDATE', isChecking)
   }
 }
 

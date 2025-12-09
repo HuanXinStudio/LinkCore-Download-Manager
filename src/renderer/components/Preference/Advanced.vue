@@ -35,7 +35,11 @@
                     new Date(form.lastCheckUpdateTime).toLocaleString() :
                     new Date().toLocaleString())
                 }}
-                <span class="action-link" @click.prevent="onCheckUpdateClick">
+                <span
+                  class="action-link"
+                  :class="{ 'action-link--disabled': isCheckingUpdate }"
+                  @click.prevent="isCheckingUpdate ? null : onCheckUpdateClick()"
+                >
                   {{ $t('app.check-updates-now') }}
                 </span>
               </div>
@@ -438,7 +442,7 @@
 <script>
   import is from 'electron-is'
   import { dialog } from '@electron/remote'
-  import { mapState } from 'vuex'
+  import { mapState, mapActions } from 'vuex'
   import { cloneDeep, extend, isEmpty } from 'lodash'
   import randomize from 'randomatic'
   import ShowInFolder from '@/components/Native/ShowInFolder'
@@ -535,6 +539,7 @@
       }
     },
     computed: {
+      ...mapState('app', ['isCheckingUpdate']),
       isRenderer: () => is.renderer(),
       title () {
         return this.$t('preferences.advanced')
@@ -598,6 +603,7 @@
       }
     },
     methods: {
+      ...mapActions('app', ['updateCheckingUpdate']),
       autoSaveForm () {
         // Debounce auto-save to avoid too many requests
         if (this.saveTimeout) {
@@ -616,8 +622,67 @@
         this.autoSaveForm()
       },
       onCheckUpdateClick () {
-        this.$electron.ipcRenderer.send('command', 'application:check-for-updates')
+        // 如果正在检查，直接返回
+        if (this.isCheckingUpdate) return
+
+        // 设置检查状态
+        this.updateCheckingUpdate(true)
+
+        // 显示检查中消息
         this.$msg.info(this.$t('app.checking-for-updates'))
+
+        // 创建临时事件监听器，使用once确保只触发一次
+        const onUpdateError = () => {
+          this.$msg.error(this.$t('app.update-error-message'))
+          this.updateCheckingUpdate(false)
+        }
+
+        const onUpdateNotAvailable = () => {
+          this.$msg.success(this.$t('app.update-not-available-message'))
+          this.updateCheckingUpdate(false)
+        }
+
+        const onUpdateAvailable = (event, version) => {
+          this.$msg.info(this.$t('app.update-available-message'))
+          this.updateCheckingUpdate(false)
+        }
+
+        // 使用once监听事件，确保事件只处理一次
+        this.$electron.ipcRenderer.once('update-error', onUpdateError)
+        this.$electron.ipcRenderer.once('update-not-available', onUpdateNotAvailable)
+        this.$electron.ipcRenderer.once('update-available', onUpdateAvailable)
+
+        // 设置超时处理，防止无限期等待
+        const timeout = setTimeout(() => {
+          console.log('[Motrix] Update check timed out')
+          // 移除所有临时事件监听器
+          this.$electron.ipcRenderer.removeListener('update-error', onUpdateError)
+          this.$electron.ipcRenderer.removeListener('update-not-available', onUpdateNotAvailable)
+          this.$electron.ipcRenderer.removeListener('update-available', onUpdateAvailable)
+
+          // 显示超时消息
+          this.$msg.error(this.$t('app.update-timeout-message') || '更新检查超时，请稍后重试')
+          this.updateCheckingUpdate(false)
+        }, 10000) // 10秒超时
+
+        // 监听任何更新事件，清除超时
+        const clearTimeoutListener = () => {
+          clearTimeout(timeout)
+          console.log('[Motrix] Update check completed, clearing timeout')
+          // 移除清除超时的监听器
+          this.$electron.ipcRenderer.removeListener('update-error', clearTimeoutListener)
+          this.$electron.ipcRenderer.removeListener('update-not-available', clearTimeoutListener)
+          this.$electron.ipcRenderer.removeListener('update-available', clearTimeoutListener)
+        }
+        this.$electron.ipcRenderer.once('update-error', clearTimeoutListener)
+        this.$electron.ipcRenderer.once('update-not-available', clearTimeoutListener)
+        this.$electron.ipcRenderer.once('update-available', clearTimeoutListener)
+
+        // 发送检查更新命令
+        console.log('[Motrix] Sending check for updates command')
+        this.$electron.ipcRenderer.send('command', 'application:check-for-updates')
+
+        // 更新最后检查时间
         this.$store.dispatch('preference/fetchPreference')
           .then((config) => {
             const { lastCheckUpdateTime } = config
@@ -832,5 +897,14 @@
 }
 .ua-group {
   margin-top: 8px;
+}
+
+.action-link {
+  &--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    text-decoration: none;
+  }
 }
 </style>
