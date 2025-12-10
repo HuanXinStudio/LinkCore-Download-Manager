@@ -58,6 +58,7 @@
           return task.status
         }
       }
+
     },
     methods: {
       onDbClick () {
@@ -107,7 +108,7 @@
 .selected .task-item {
   border-color: $--task-item-hover-border-color;
 }
-.task-name {
+  .task-name {
   color: #505753;
   margin-bottom: 1.5rem;
   margin-right: 200px;

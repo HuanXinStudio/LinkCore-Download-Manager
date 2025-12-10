@@ -26,6 +26,7 @@ export default {
   'seed-time-unit': '分钟',
   'task-manage': '任务管理',
   'file-manage': '文件管理',
+  'set-file-mtime-on-complete': '将文件修改日期设置为下载完成时间',
   'auto-categorize-files': '自动分类文件',
   'auto-categorize-files-tips': '启用后，程序会根据文件后缀自动创建文件夹并分类文件',
   'file-categories': '文件分类规则',
@@ -142,6 +143,5 @@ export default {
   'cancel': '取消',
   'save': '保存'
 }
-
 
 

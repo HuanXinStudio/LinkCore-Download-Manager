@@ -11,6 +11,11 @@
     :before-close="handleClose"
     @closed="handleClosed"
   >
+    <div v-if="magnetHintText" class="task-detail-hint">
+      <el-tooltip effect="dark" :content="magnetHintText" placement="bottom">
+        <span class="task-detail-hint__text">{{ magnetHintText }}</span>
+      </el-tooltip>
+    </div>
     <el-tabs
       tab-position="top"
       class="task-detail-tab"
@@ -114,6 +119,7 @@
     calcFormLabelWidth,
     checkTaskIsBT,
     checkTaskIsSeeder,
+    isMagnetTask,
     getFileName,
     getFileExtension
   } from '@shared/utils'
@@ -129,6 +135,7 @@
   import TaskTrackers from './TaskTrackers'
   import TaskPeers from './TaskPeers'
   import TaskFiles from './TaskFiles'
+  import { mapState } from 'vuex'
 
   const cached = {
     files: []
@@ -182,12 +189,58 @@
       }
     },
     computed: {
+      ...mapState('task', {
+        magnetStatuses: state => state.magnetStatuses
+      }),
+      ...mapState('preference', {
+        preferenceConfig: state => state.config
+      }),
       isRenderer: () => is.renderer(),
       isBT () {
         return checkTaskIsBT(this.task)
       },
       isSeeder () {
         return checkTaskIsSeeder(this.task)
+      },
+      magnetHintText () {
+        const task = this.task || {}
+        const zero = Number(task.downloadSpeed) === 0
+        const isMagnet = isMagnetTask(task)
+        if (!(isMagnet && zero)) return ''
+        const s = this.magnetStatuses[task.gid]
+        if (!s) return this.$t('task.magnet-fetching-metadata')
+        const { peerCount = 0, trackerCount = 0, elapsedSec = 0, phase = '', peerTrend = 'flat', globalLimitLow = false, pauseMetadata = false } = s
+        const cfg = this.preferenceConfig || {}
+        const dhtEnabled = Number(cfg['dht-listen-port'] || cfg.dhtListenPort || 0) > 0
+        const trackersConfigured = `${cfg['bt-tracker'] || cfg.btTracker || ''}`.trim().length > 0
+        const elapsedMin = Math.floor(elapsedSec / 60)
+        if (phase === 'no_trackers' || (peerCount === 0 && trackerCount === 0)) {
+          const base = trackersConfigured ? this.$t('task.magnet-status-contacting-trackers', { trackerCount }) : this.$t('task.magnet-status-no-trackers')
+          const suggest = this.$t('task.magnet-suggest-add-trackers')
+          return `${base}，${suggest}`
+        }
+        if (phase === 'contacting_trackers' || (peerCount === 0 && trackerCount > 0)) {
+          const base = this.$t('task.magnet-status-contacting-trackers', { trackerCount })
+          if (elapsedMin >= 2) {
+            const wait = this.$t('task.magnet-status-long-wait') + ' ' + this.$t('task.magnet-status-elapsed-minutes', { minutes: elapsedMin })
+            const extra = dhtEnabled ? '' : (' ' + this.$t('task.magnet-suggest-open-port'))
+            const limit = globalLimitLow ? (' ' + this.$t('task.magnet-suggest-limit')) : ''
+            const paused = pauseMetadata ? (' ' + this.$t('task.magnet-suggest-unpause-metadata')) : ''
+            return `${base}，${wait}${extra}${limit}${paused}`
+          }
+          return base
+        }
+        const peersText = this.$t('task.magnet-status-peers', { peerCount })
+        const trackersText = this.$t('task.magnet-status-trackers', { trackerCount })
+        if (elapsedMin >= 2) {
+          const wait = this.$t('task.magnet-status-long-wait') + ' ' + this.$t('task.magnet-status-elapsed-minutes', { minutes: elapsedMin })
+          const trendText = peerTrend === 'up' ? this.$t('task.magnet-trend-up') : (peerTrend === 'down' ? this.$t('task.magnet-trend-down') : this.$t('task.magnet-trend-flat'))
+          const limit = globalLimitLow ? (' ' + this.$t('task.magnet-suggest-limit')) : ''
+          const paused = pauseMetadata ? (' ' + this.$t('task.magnet-suggest-unpause-metadata')) : ''
+          return `${peersText}，${trackersText}，${wait}，${trendText}${limit}${paused}`
+        }
+        const trendText = peerTrend === 'up' ? this.$t('task.magnet-trend-up') : (peerTrend === 'down' ? this.$t('task.magnet-trend-down') : '')
+        return `${peersText}，${trackersText}${trendText ? '，' + trendText : ''}`
       },
       taskStatus () {
         const { task, isSeeder } = this
@@ -342,6 +395,17 @@
   .el-drawer__body {
     position: relative;
     overflow: hidden;
+  }
+  .task-detail-hint {
+    padding: 0.25rem 1.25rem 0.5rem;
+    color: #9B9B9B;
+    .task-detail-hint__text {
+      display: inline-block;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
   .task-detail-actions {
     position: sticky;

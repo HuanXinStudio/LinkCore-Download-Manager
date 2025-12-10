@@ -30,6 +30,11 @@
         <mo-task-status :theme="currentTheme" :status="taskStatus" />
       </div>
     </el-form-item>
+    <el-form-item :label="`${$t('task.task-priority')}: `">
+      <div class="form-static-value">
+        {{ taskPriority }}
+      </div>
+    </el-form-item>
     <el-form-item :label="`${$t('task.task-error-info')}: `" v-if="task.errorCode && task.errorCode !== '0'">
       <div class="form-static-value">
         {{ task.errorCode }} {{ task.errorMessage }}
@@ -164,6 +169,11 @@
       },
       isBT () {
         return checkTaskIsBT(this.task)
+      },
+      taskPriority () {
+        const gid = this.task && this.task.gid
+        const map = this.$store.state.task.taskPriorities || {}
+        return (gid && map[gid]) ? Number(map[gid]) : 0
       }
     },
     filters: {

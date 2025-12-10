@@ -263,10 +263,18 @@ export const getFileNameFromFile = (file) => {
   const index = path.lastIndexOf('/')
 
   if (index <= 0 || index === path.length) {
-    return path
+    const base = path
+    const q = base.indexOf('?')
+    const h = base.indexOf('#')
+    const cutIdx = [q, h].filter(i => i >= 0).sort((a, b) => a - b)[0]
+    return typeof cutIdx === 'number' ? base.substring(0, cutIdx) : base
   }
 
-  return path.substring(index + 1)
+  const name = path.substring(index + 1)
+  const qIdx = name.indexOf('?')
+  const hIdx = name.indexOf('#')
+  const cutIdx = [qIdx, hIdx].filter(i => i >= 0).sort((a, b) => a - b)[0]
+  return typeof cutIdx === 'number' ? name.substring(0, cutIdx) : name
 }
 
 export const isMagnetTask = (task) => {
@@ -513,9 +521,25 @@ export const decodeThunderLink = (url = '') => {
 export const splitTaskLinks = (links = '') => {
   const temp = compact(splitTextRows(links))
   const result = temp.map((item) => {
-    return decodeThunderLink(item)
+    return sanitizeLink(decodeThunderLink(item))
   })
   return result
+}
+
+export const sanitizeLink = (link = '') => {
+  let s = `${link}`.trim()
+  // 移除零宽字符、BOM、方向性标记
+  s = s.replace(/[\u200B-\u200D\uFEFF\u2060\u202A-\u202E\u061C]/g, '')
+  // 规范空白符
+  s = s.replace(/\s+/g, ' ')
+  // 针对 magnet 规范化 btih 值，剔除不合法字符
+  if (s.startsWith('magnet:?')) {
+    s = s.replace(/(xt=urn:btih:)([^&]+)/i, (m, p1, ih) => {
+      const clean = ih.replace(/[^A-Za-z0-9]/g, '')
+      return `${p1}${clean}`
+    })
+  }
+  return s
 }
 
 export const detectResource = (content) => {

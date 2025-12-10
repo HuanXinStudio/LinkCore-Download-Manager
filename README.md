@@ -1,4 +1,4 @@
-# LinkCore Download Manager
+# LinkCore Download Manager [简体中文](./README-CN.md)
 
 <p align="center">
   <img src="./screenshots/屏幕截图 2025-12-09 052141.png" width="1100" alt="LinkCore Download Manager Logo" />
@@ -19,9 +19,7 @@
   </a>
 </p>
 
-<p align="center">
-  English | <a href="./README-CN.md">简体中文</a>
-</p>
+
 
 ## 📖 Overview
 
@@ -56,6 +54,17 @@ Originally forked from <a href="https://github.com/agalwood/Motrix">Motrix</a>, 
 - **User-Agent Spoofing**: Customize user-agent strings for compatibility
 - **Task Scheduling**: Set download times and priorities
 - **Batch Downloads**: Import and export download lists
+
+### Unique Features
+
+- **Auto Categorization**: Automatically save files by type
+- **Custom Categories**: Define your own rules for file categorization
+- **Task Priority Value**: Set numeric priorities to influence download order and resource allocation
+- **Custom Download Suffix**: Configure a temporary suffix for downloading files for easier management
+- **Set File Modified Time to Completion Time**: Optionally set the file's modification time to the moment the download finishes
+- **Quick Engine Switching**: Switch between different download engines quickly to suit various scenarios
+- **Advanced Option Presets**: Name, save, select, and delete presets for advanced options
+- **Link Input UX Enhancements**: Automatically deduplicate links; auto-append newline and place caret after paste or autofill
 
 ## 🖥️ Platforms
 
@@ -107,6 +116,11 @@ LinkCore Download Manager is currently available for:
 - `Ctrl/Cmd + P`: Pause selected task(s)
 - `Ctrl/Cmd + D`: Delete selected task(s)
 - `Ctrl/Cmd + Q`: Quit the application
+
+## Tips
+
+- In the “Add Task” dialog, you can set a numeric priority for each parsed item. Higher values get scheduled earlier while low-priority tasks are interleaved to keep allocation fair. Priorities are shown on the task card and in the detail panel, and persist across restarts.
+- “Advanced Options” support named presets for quick reuse (UA, Referer, Cookie, proxy, etc.). Saving is blocked when all fields are empty, with a localized warning.
 
 ## 🛠️ Development
 
@@ -176,7 +190,7 @@ Contributions are welcome! Whether you're fixing bugs, adding new features, or i
 - Include tests for new features
 - Update documentation as needed
 
-## � License
+## 📄 License
 
 LinkCore Download Manager is licensed under the [MIT License](LICENSE).
 
@@ -197,5 +211,5 @@ If you encounter any issues or have questions:
 ---
 
 <p align="center">
-  Made with by HuanXinStudio
+  Made by HuanXinStudio
 </p>

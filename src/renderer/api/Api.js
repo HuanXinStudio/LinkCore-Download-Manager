@@ -182,10 +182,15 @@ export default class Api {
     const {
       uris,
       outs,
-      options
+      options,
+      dirs
     } = params
     const tasks = uris.map((uri, index) => {
-      const engineOptions = formatOptionsForEngine(options)
+      const perOptions = { ...options }
+      if (Array.isArray(dirs) && dirs[index]) {
+        perOptions.dir = dirs[index]
+      }
+      const engineOptions = formatOptionsForEngine(perOptions)
       if (outs && outs[index]) {
         engineOptions.out = outs[index]
       }

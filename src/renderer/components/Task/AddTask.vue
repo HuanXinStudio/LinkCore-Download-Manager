@@ -45,6 +45,18 @@
                   <span>{{ scope.row.sizeText }}</span>
                 </template>
               </el-table-column>
+              <el-table-column :label="$t('task.task-priority')" min-width="150">
+                <template slot-scope="scope">
+                  <el-input-number
+                    size="mini"
+                    v-model="scope.row.priority"
+                    :min="0"
+                    :max="999"
+                    :step="1"
+                    controls-position="right"
+                  />
+                </template>
+              </el-table-column>
             </el-table>
           </div>
         </el-tab-pane>
@@ -93,6 +105,22 @@
         </el-input>
       </el-form-item>
       <div class="task-advanced-options" v-if="showAdvanced">
+        <el-row :gutter="8" style="margin-bottom: 8px; align-items:center;">
+          <el-col :span="16" :xs="14">
+            <el-form-item :label="`${$t('task.advanced-presets')}: `" :label-width="formLabelWidth">
+              <el-select v-model="selectedAdvancedPresetId" placeholder="" @change="onAdvancedPresetChange">
+                <el-option :label="$t('task.empty-preset')" value="" />
+                <el-option v-for="p in advancedPresets" :key="p.id" :label="p.name" :value="p.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8" :xs="10" style="text-align:right;">
+            <div class="preset-actions">
+              <el-button type="primary" size="mini" @click="openSavePresetDialog">{{ $t('task.save-advanced-preset') }}</el-button>
+              <el-button type="danger" size="mini" :disabled="!selectedAdvancedPresetId" @click="deleteAdvancedPreset">{{ $t('task.delete-advanced-preset') }}</el-button>
+            </div>
+          </el-col>
+        </el-row>
         <el-form-item
           :label="`${$t('task.task-user-agent')}: `"
           :label-width="formLabelWidth"
@@ -198,6 +226,24 @@
         </el-col>
       </el-row>
     </div>
+    <el-dialog
+      custom-class="save-advanced-preset-dialog"
+      width="400px"
+      :visible.sync="savePresetDialogVisible"
+      :append-to-body="true"
+    >
+      <div>
+        <el-form label-position="left">
+          <el-form-item :label="`${$t('task.preset-name')}: `" :label-width="formLabelWidth">
+            <el-input v-model="savePresetName" />
+          </el-form-item>
+        </el-form>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="savePresetDialogVisible=false">{{ $t('app.cancel') }}</el-button>
+        <el-button type="primary" @click="saveAdvancedPreset">{{ $t('app.save') }}</el-button>
+      </div>
+    </el-dialog>
   </el-dialog>
 </template>
 
@@ -215,7 +261,7 @@
     buildTorrentPayload
   } from '@/utils/task'
   import { ADD_TASK_TYPE } from '@shared/constants'
-  import { detectResource } from '@shared/utils'
+  import { detectResource, splitTaskLinks } from '@shared/utils'
   import '@/components/Icons/inbox'
 
   export default {
@@ -241,7 +287,12 @@
         showAdvanced: false,
         form: {},
         rules: {},
-        parsedTasks: []
+        parsedTasks: [],
+        keepTrailingNewline: false,
+        advancedPresets: [],
+        selectedAdvancedPresetId: '',
+        savePresetDialogVisible: false,
+        savePresetName: ''
       }
     },
     computed: {
@@ -286,6 +337,82 @@
       }
     },
     methods: {
+      loadAdvancedPresets () {
+        const { advancedOptionPresets = [] } = this.config || {}
+        this.advancedPresets = Array.isArray(advancedOptionPresets) ? advancedOptionPresets : []
+      },
+      openSavePresetDialog () {
+        const data = {
+          userAgent: this.form.userAgent || '',
+          authorization: this.form.authorization || '',
+          referer: this.form.referer || '',
+          cookie: this.form.cookie || '',
+          allProxy: this.form.allProxy || '',
+          newTaskShowDownloading: !!this.form.newTaskShowDownloading
+        }
+        const allEmpty = [
+          data.userAgent,
+          data.authorization,
+          data.referer,
+          data.cookie,
+          data.allProxy
+        ].every(v => !v || !String(v).trim()) && !data.newTaskShowDownloading
+        if (allEmpty) {
+          this.$msg.warning(this.$t('task.empty-advanced-options-tips'))
+          return
+        }
+        this.savePresetName = ''
+        this.savePresetDialogVisible = true
+      },
+      saveAdvancedPreset () {
+        const name = (this.savePresetName || '').trim() || `Preset ${new Date().toLocaleString()}`
+        const data = {
+          userAgent: this.form.userAgent || '',
+          authorization: this.form.authorization || '',
+          referer: this.form.referer || '',
+          cookie: this.form.cookie || '',
+          allProxy: this.form.allProxy || '',
+          newTaskShowDownloading: !!this.form.newTaskShowDownloading
+        }
+        const preset = { id: Date.now().toString(), name, data }
+        const next = [...this.advancedPresets, preset]
+        this.advancedPresets = next
+        this.$store.dispatch('preference/save', { advancedOptionPresets: next })
+        this.$msg.success(this.$t('task.save-preset-success'))
+        this.savePresetDialogVisible = false
+        this.selectedAdvancedPresetId = preset.id
+      },
+      onAdvancedPresetChange (id) {
+        if (!id) {
+          this.form.userAgent = ''
+          this.form.authorization = ''
+          this.form.referer = ''
+          this.form.cookie = ''
+          this.form.allProxy = ''
+          this.form.newTaskShowDownloading = false
+          return
+        }
+        const preset = this.advancedPresets.find(p => p.id === id)
+        if (!preset) return
+        const d = preset.data || {}
+        this.form.userAgent = d.userAgent || ''
+        this.form.authorization = d.authorization || ''
+        this.form.referer = d.referer || ''
+        this.form.cookie = d.cookie || ''
+        this.form.allProxy = d.allProxy || ''
+        this.form.newTaskShowDownloading = !!d.newTaskShowDownloading
+        this.$msg.success(this.$t('task.apply-preset-success'))
+      },
+      deleteAdvancedPreset () {
+        const id = this.selectedAdvancedPresetId
+        if (!id) return
+        const next = this.advancedPresets.filter(p => p.id !== id)
+        this.advancedPresets = next
+        this.selectedAdvancedPresetId = ''
+        this.onAdvancedPresetChange('')
+        this.$store.dispatch('preference/save', { advancedOptionPresets: next })
+        this.$msg.success(this.$t('task.delete-preset-success'))
+      },
       async autofillResourceLink () {
         const content = await navigator.clipboard.readText()
         const hasResource = detectResource(content)
@@ -296,6 +423,8 @@
         if (isEmpty(this.form.uris)) {
           this.form.uris = content
           this.updateUriPreview(this.form.uris)
+          this.keepTrailingNewline = true
+          this.ensureTrailingNewlineAndCaret()
         }
       },
       beforeClose () {
@@ -305,9 +434,14 @@
       },
       handleOpen () {
         this.form = initTaskForm(this.$store.state)
+        this.selectedAdvancedPresetId = ''
+        this.onAdvancedPresetChange('')
+        this.loadAdvancedPresets()
         if (this.taskType === ADD_TASK_TYPE.URI) {
           if (!isEmpty(this.form.uris)) {
             this.updateUriPreview(this.form.uris)
+            this.keepTrailingNewline = true
+            this.ensureTrailingNewlineAndCaret()
           }
           this.autofillResourceLink()
           setTimeout(() => {
@@ -335,11 +469,30 @@
       handleTabClick (tab) {
         this.$store.dispatch('app/changeAddTaskType', tab.name)
       },
-      handleUriPaste () {
+      handleUriPaste (event) {
         setImmediate(() => {
           const uris = this.$refs.uri.value
           this.detectThunderResource(uris)
           this.updateUriPreview(uris)
+          this.keepTrailingNewline = true
+          this.ensureTrailingNewlineAndCaret()
+        })
+      },
+      ensureTrailingNewlineAndCaret () {
+        let uris = this.$refs.uri && (this.$refs.uri.value || (this.$refs.uri.$refs && this.$refs.uri.$refs.textarea && this.$refs.uri.$refs.textarea.value))
+        if (!uris) return
+        if (!/\n$/.test(uris)) {
+          uris = uris.replace(/\s+$/, '') + '\n'
+          this.form.uris = uris
+        }
+        this.$nextTick(() => {
+          const textarea = this.$refs.uri && this.$refs.uri.$refs && this.$refs.uri.$refs.textarea
+          if (textarea) {
+            const end = this.form.uris.length
+            textarea.selectionStart = end
+            textarea.selectionEnd = end
+          }
+          this.keepTrailingNewline = false
         })
       },
       detectThunderResource (uris = '') {
@@ -374,6 +527,9 @@
         this.showAdvanced = false
         this.form = initTaskForm(this.$store.state)
         this.parsedTasks = []
+        this.selectedAdvancedPresetId = ''
+        this.savePresetDialogVisible = false
+        this.savePresetName = ''
       },
       enableNameEdit (idx) {
         if (this.parsedTasks[idx]) {
@@ -386,40 +542,103 @@
         }
       },
       async updateUriPreview (uris = '') {
-        const lines = (uris || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-        const items = lines.map(u => {
+        const sanitized = splitTaskLinks(uris || '')
+        const seen = new Set()
+        const lines = []
+        for (const u of sanitized) {
+          if (!seen.has(u)) {
+            seen.add(u)
+            lines.push(u)
+          }
+        }
+        const removed = sanitized.length - lines.length
+        const joined = lines.join('\n')
+        const currentJoined = (uris || '').trim().replace(/(?:\r\n|\r|\n)/g, '\n')
+        if (joined !== currentJoined) {
+          this.form.uris = joined
+          if (removed > 0) {
+            this.$msg.info(this.$t('task.remove-duplicate-links-message', { count: removed }))
+          }
+        }
+        const items = lines.map((u, i) => {
           try {
             const url = decodeURI(u)
             const lastSlash = url.lastIndexOf('/')
-            const name = lastSlash >= 0 ? url.substring(lastSlash + 1) : url
-            return { name, sizeText: '-', editing: false }
+            let name = lastSlash >= 0 ? url.substring(lastSlash + 1) : url
+            if (name) {
+              const qIdx = name.indexOf('?')
+              const hIdx = name.indexOf('#')
+              const cutIdx = [qIdx, hIdx].filter(i => i >= 0).sort((a, b) => a - b)[0]
+              if (typeof cutIdx === 'number') {
+                name = name.substring(0, cutIdx)
+              }
+            }
+            return { name, sizeText: '-', editing: false, priority: 0, url: u, order: i }
           } catch (e) {
-            return { name: u, sizeText: '-', editing: false }
+            return { name: u, sizeText: '-', editing: false, priority: 0, url: u, order: i }
           }
         })
         this.parsedTasks = items
         await this.fetchUriSizes(lines)
+        if (this.keepTrailingNewline && lines.length > 0) {
+          this.ensureTrailingNewlineAndCaret()
+        }
       },
       async fetchUriSizes (lines = []) {
+        const buildHeaders = () => {
+          const h = {}
+          if (this.form.userAgent) h['User-Agent'] = this.form.userAgent
+          if (this.form.referer) h.Referer = this.form.referer
+          if (this.form.cookie) h.Cookie = this.form.cookie
+          if (this.form.authorization) h.Authorization = this.form.authorization
+          h.Accept = '*/*'
+          return h
+        }
+        const parseDisposition = (v) => {
+          if (!v) return null
+          const star = /filename\*=([^;]+)/i.exec(v)
+          if (star && star[1]) {
+            const part = star[1].trim()
+            const m = /^([^']*)'[^']*'(.*)$/.exec(part)
+            const name = m ? decodeURIComponent(m[2]) : decodeURIComponent(part)
+            return name
+          }
+          const normal = /filename="?([^";]+)"?/i.exec(v)
+          if (normal && normal[1]) return normal[1]
+          return null
+        }
         const updates = await Promise.all(lines.map(async (u, idx) => {
           if (!/^https?:/i.test(u) || u.startsWith('magnet:')) {
-            return { idx, sizeText: '-' }
+            return { idx, sizeText: '-', dispName: null }
           }
+          const headers = buildHeaders()
           try {
-            const res = await fetch(u, { method: 'HEAD' })
-            const len = res.headers.get('content-length')
-            if (!len) {
-              return { idx, sizeText: '-' }
+            let res = await fetch(u, { method: 'HEAD', headers })
+            let len = res.headers.get('content-length')
+            let disp = parseDisposition(res.headers.get('content-disposition'))
+            if (!len || len === '0') {
+              try {
+                res = await fetch(u, { method: 'GET', headers: { ...headers, Range: 'bytes=0-0' } })
+                const cr = res.headers.get('content-range')
+                if (cr) {
+                  const m = /\/(\d+)$/i.exec(cr)
+                  if (m && m[1]) len = m[1]
+                }
+                if (!disp) disp = parseDisposition(res.headers.get('content-disposition'))
+              } catch (_) {}
             }
-            const sizeText = this.bytesToSize(parseInt(len, 10))
-            return { idx, sizeText }
+            const sizeText = len ? this.bytesToSize(parseInt(len, 10)) : '-'
+            return { idx, sizeText, dispName: disp }
           } catch (_) {
-            return { idx, sizeText: '-' }
+            return { idx, sizeText: '-', dispName: null }
           }
         }))
-        updates.forEach(({ idx, sizeText }) => {
+        updates.forEach(({ idx, sizeText, dispName }) => {
           if (this.parsedTasks[idx]) {
             this.$set(this.parsedTasks[idx], 'sizeText', sizeText)
+            if (dispName) {
+              this.$set(this.parsedTasks[idx], 'name', dispName)
+            }
           }
         })
       },
@@ -435,6 +654,7 @@
         }
         this.parsedTasks = items
       },
+
       bytesToSize (n) {
         if (!n || n <= 0) return '-'
         const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -473,7 +693,37 @@
 
           try {
             if (this.type === 'uri' && this.parsedTasks.length > 0) {
-              this.form.customOuts = this.parsedTasks.map(i => i.name)
+              const buckets = {}
+              const prios = []
+              this.parsedTasks.forEach(item => {
+                const p = Number(item.priority) || 0
+                if (!buckets[p]) {
+                  buckets[p] = []
+                  prios.push(p)
+                }
+                buckets[p].push(item)
+              })
+              prios.sort((a, b) => b - a)
+              const ordered = []
+              let remaining = this.parsedTasks.length
+              const indices = prios.map(() => 0)
+              while (remaining > 0) {
+                for (let i = 0; i < prios.length; i++) {
+                  const p = prios[i]
+                  const arr = buckets[p]
+                  const idx = indices[i]
+                  if (idx < arr.length) {
+                    ordered.push(arr[idx])
+                    indices[i] = idx + 1
+                    remaining--
+                    if (remaining <= 0) break
+                  }
+                }
+              }
+              this.form.customOuts = ordered.map(i => i.name)
+              const urisOrdered = ordered.map(i => i.url)
+              this.form.uris = urisOrdered.join('\n')
+              this.form.priorities = ordered.map(i => Number(i.priority) || 0)
             }
             this.addTask(this.type, this.form)
 
@@ -503,7 +753,7 @@
   :deep(.el-dialog__wrapper) {
     background: rgba(0, 0, 0, 0.5);
   }
-  .parsed-preview {
+.parsed-preview {
     margin-top: 12px;
     .parsed-preview__header {
       font-size: 12px;
@@ -586,6 +836,17 @@
         }
       }
     }
+  }
+}
+
+.task-advanced-options {
+  .preset-actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
   }
 }
 </style>

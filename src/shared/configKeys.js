@@ -30,7 +30,10 @@ const userKeys = [
   'tray-speedometer',
   'downloading-file-suffix',
   'auto-categorize-files',
-  'file-categories'
+  'file-categories',
+  'set-file-mtime-on-complete',
+  'advanced-option-presets',
+  'task-priorities'
 ]
 
 const systemKeys = [

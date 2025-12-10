@@ -26,6 +26,7 @@ export default {
   'seed-time-unit': 'minutes',
   'task-manage': 'Task Management',
   'file-manage': 'File Management',
+  'set-file-mtime-on-complete': 'Set file modification time to completion time',
   'auto-categorize-files': 'Auto Categorize Files',
   'auto-categorize-files-tips': 'When enabled, files will be automatically organized into folders based on their file extensions',
   'file-categories': 'File Categories',
@@ -140,6 +141,5 @@ export default {
   'cancel': 'Cancel',
   'save': 'Save'
 }
-
 
 

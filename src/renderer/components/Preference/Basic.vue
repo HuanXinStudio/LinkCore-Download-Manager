@@ -325,6 +325,11 @@
                 </template>
               </el-input>
             </el-col>
+            <el-col class="form-item-sub" :span="24">
+              <el-checkbox v-model="form.setFileMtimeOnComplete" @change="autoSaveForm">
+                {{ $t('preferences.set-file-mtime-on-complete') }}
+              </el-checkbox>
+            </el-col>
             <!-- 自动分类文件设置 -->
             <el-col class="form-item-sub" :span="24">
               <el-checkbox v-model="form.autoCategorizeFiles" @change="autoSaveForm">
@@ -477,7 +482,8 @@
       theme,
       traySpeedometer,
       autoCategorizeFiles,
-      fileCategories
+      fileCategories,
+      setFileMtimeOnComplete
     } = config
 
     const btAutoDownloadContent = followTorrent &&
@@ -516,6 +522,7 @@
       theme,
       traySpeedometer,
       autoCategorizeFiles: autoCategorizeFiles || false,
+      setFileMtimeOnComplete: setFileMtimeOnComplete || false,
       fileCategories: fileCategories || {
         images: { name: 'image-files', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'] },
         documents: { name: 'document-files', extensions: ['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx'] },

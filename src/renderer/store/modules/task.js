@@ -12,7 +12,9 @@ const state = {
   currentTaskPeers: [],
   seedingList: [],
   taskList: [],
-  selectedGidList: []
+  selectedGidList: [],
+  magnetStatuses: {},
+  taskPriorities: {}
 }
 
 const getters = {
@@ -48,6 +50,19 @@ const mutations = {
   },
   UPDATE_CURRENT_TASK_PEERS (state, peers) {
     state.currentTaskPeers = peers
+  },
+  UPDATE_MAGNET_STATUS (state, payload) {
+    const { gid, ...rest } = payload
+    const prev = state.magnetStatuses[gid] || {}
+    state.magnetStatuses = { ...state.magnetStatuses, [gid]: { ...prev, ...rest } }
+  },
+  CLEAR_MAGNET_STATUS (state, gid) {
+    const next = { ...state.magnetStatuses }
+    delete next[gid]
+    state.magnetStatuses = next
+  },
+  UPDATE_TASK_PRIORITIES (state, mapping) {
+    state.taskPriorities = { ...state.taskPriorities, ...mapping }
   }
 }
 
@@ -57,7 +72,7 @@ const actions = {
     commit('UPDATE_SELECTED_GID_LIST', [])
     dispatch('fetchList')
   },
-  fetchList ({ commit, state }) {
+  fetchList ({ commit, state, rootState }) {
     return api.fetchTaskList({ type: state.currentList })
       .then((data) => {
         commit('UPDATE_TASK_LIST', data)
@@ -66,6 +81,28 @@ const actions = {
         const gids = data.map((task) => task.gid)
         const list = intersection(selectedGidList, gids)
         commit('UPDATE_SELECTED_GID_LIST', list)
+
+        try {
+          const saved = (rootState.preference && rootState.preference.config && rootState.preference.config.taskPriorities) || {}
+          const mapping = {}
+          data.forEach(task => {
+            const dir = task.dir || ''
+            let base = ''
+            try {
+              const fp = task.files && task.files[0] && (task.files[0].path || '')
+              base = fp ? fp.split(/[\\/]/).pop() : ''
+            } catch (_) {}
+            if (dir && base) {
+              const key = `${dir}|${base}`
+              if (saved[key] != null) {
+                mapping[task.gid] = Number(saved[key]) || 0
+              }
+            }
+          })
+          if (Object.keys(mapping).length > 0) {
+            commit('UPDATE_TASK_PRIORITIES', mapping)
+          }
+        } catch (e) {}
       })
   },
   selectTasks ({ commit }, list) {
@@ -120,10 +157,34 @@ const actions = {
   updateCurrentTaskGid ({ commit }, gid) {
     commit('UPDATE_CURRENT_TASK_GID', gid)
   },
-  addUri ({ dispatch }, data) {
-    const { uris, outs, options } = data
-    return api.addUri({ uris, outs, options })
-      .then(() => {
+  addUri ({ dispatch, commit, rootState }, data) {
+    const { uris, outs, options, dirs, priorities } = data
+    return api.addUri({ uris, outs, options, dirs })
+      .then((res) => {
+        if (Array.isArray(res)) {
+          const gids = res.map(r => r && r[0]).filter(Boolean)
+          if (Array.isArray(priorities) && priorities.length === gids.length) {
+            const mapping = {}
+            for (let i = 0; i < gids.length; i++) {
+              mapping[gids[i]] = Number(priorities[i]) || 0
+            }
+            commit('UPDATE_TASK_PRIORITIES', mapping)
+
+            try {
+              const existing = (rootState.preference && rootState.preference.config && rootState.preference.config.taskPriorities) || {}
+              const persist = { ...existing }
+              for (let i = 0; i < gids.length; i++) {
+                const dir = Array.isArray(dirs) && dirs[i] ? dirs[i] : (options && options.dir) || (rootState.preference && rootState.preference.config && rootState.preference.config.dir) || ''
+                const out = Array.isArray(outs) && outs[i] ? outs[i] : ''
+                if (dir && out) {
+                  const key = `${dir}|${out}`
+                  persist[key] = Number(priorities[i]) || 0
+                }
+              }
+              dispatch('preference/save', { taskPriorities: persist }, { root: true })
+            } catch (e) {}
+          }
+        }
         dispatch('fetchList')
         dispatch('app/updateAddTaskOptions', {}, { root: true })
       })
@@ -234,6 +295,12 @@ const actions = {
       .finally(() => {
         dispatch('saveSession')
       })
+  },
+  updateMagnetStatus ({ commit }, payload) {
+    commit('UPDATE_MAGNET_STATUS', payload)
+  },
+  clearMagnetStatus ({ commit }, gid) {
+    commit('CLEAR_MAGNET_STATUS', gid)
   },
   addToSeedingList ({ state, commit }, gid) {
     const { seedingList } = state

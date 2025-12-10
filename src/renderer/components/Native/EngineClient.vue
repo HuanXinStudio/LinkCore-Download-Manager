@@ -10,13 +10,19 @@
     getTaskFullPath,
     showItemInFolder
   } from '@/utils/native'
-  import { checkTaskIsBT, getTaskName } from '@shared/utils'
-  import { existsSync, renameSync, mkdirSync } from 'node:fs'
+  import { checkTaskIsBT, getTaskName, isMagnetTask } from '@shared/utils'
+  import { existsSync, renameSync, mkdirSync, utimesSync, statSync } from 'node:fs'
   import { dirname } from 'path'
   import { autoCategorizeDownloadedFile } from '@shared/utils/file-categorize'
 
   export default {
     name: 'mo-engine-client',
+    data () {
+      return {
+        magnetZeroMap: {},
+        magnetAlertedSet: new Set()
+      }
+    },
     computed: {
       isRenderer: () => is.renderer(),
       ...mapState('app', {
@@ -60,6 +66,23 @@
       }
     },
     methods: {
+      renamePreserveTimes (from, to) {
+        try {
+          const st = statSync(from)
+          renameSync(from, to)
+          try {
+            utimesSync(to, st.atime, st.mtime)
+          } catch (e) {}
+          return true
+        } catch (e) {
+          try {
+            renameSync(from, to)
+            return true
+          } catch (_) {
+            return false
+          }
+        }
+      },
       async fetchTaskItem ({ gid }) {
         return api.fetchTaskItem({ gid })
           .catch((e) => {
@@ -164,11 +187,9 @@
         this.showTaskCompleteNotify(task, isBT, path)
         this.$electron.ipcRenderer.send('event', 'task-download-complete', task, path)
 
-        // 移除下载中文件后缀
-        this.removeDownloadingSuffix(task)
-
-        // 自动分类文件
         this.autoCategorizeDownloadedFile(task)
+
+        this.setFileMtimeOnComplete(task)
       },
       ensureTargetDirectoryExists (task) {
         // 获取任务完整路径
@@ -194,6 +215,9 @@
 
         // 获取任务完整路径
         const originalPath = getTaskFullPath(task)
+        if (checkTaskIsBT(task)) {
+          return
+        }
 
         // 使用轮询方式检查文件是否存在，然后添加后缀
         this.pollForFileAndAddSuffix(originalPath, downloadingFileSuffix, 0)
@@ -210,11 +234,11 @@
         // 检查文件是否存在
         if (existsSync(originalPath) && !originalPath.endsWith(suffix)) {
           const newPath = originalPath + suffix
-          try {
-            renameSync(originalPath, newPath)
+          const ok = this.renamePreserveTimes(originalPath, newPath)
+          if (ok) {
             console.log(`[Motrix] Added downloading suffix: ${originalPath} -> ${newPath}`)
-          } catch (error) {
-            console.warn(`[Motrix] Failed to add downloading suffix: ${error.message}`)
+          } else {
+            console.warn(`[Motrix] Failed to add downloading suffix: ${originalPath} -> ${newPath}`)
           }
         } else if (!originalPath.endsWith(suffix)) {
           // 文件还不存在，继续轮询
@@ -234,21 +258,21 @@
         // 如果文件有下载中后缀，则移除后缀
         if (currentPath.endsWith(downloadingFileSuffix)) {
           const originalPath = currentPath.slice(0, -downloadingFileSuffix.length)
-          try {
-            renameSync(currentPath, originalPath)
+          const ok = this.renamePreserveTimes(currentPath, originalPath)
+          if (ok) {
             console.log(`[Motrix] Removed downloading suffix: ${currentPath} -> ${originalPath}`)
-          } catch (error) {
-            console.warn(`[Motrix] Failed to remove downloading suffix: ${error.message}`)
+          } else {
+            console.warn(`[Motrix] Failed to remove downloading suffix: ${currentPath} -> ${originalPath}`)
           }
         } else {
           // 检查是否有带后缀的文件存在（可能文件已经被重命名）
           const suffixedPath = currentPath + downloadingFileSuffix
           if (existsSync(suffixedPath)) {
-            try {
-              renameSync(suffixedPath, currentPath)
+            const ok = this.renamePreserveTimes(suffixedPath, currentPath)
+            if (ok) {
               console.log(`[Motrix] Removed downloading suffix: ${suffixedPath} -> ${currentPath}`)
-            } catch (error) {
-              console.warn(`[Motrix] Failed to remove downloading suffix: ${error.message}`)
+            } else {
+              console.warn(`[Motrix] Failed to remove downloading suffix: ${suffixedPath} -> ${currentPath}`)
             }
           }
         }
@@ -285,6 +309,23 @@
           }
         } catch (error) {
           console.error(`[Motrix] Error during auto categorization: ${error.message}`)
+        }
+      },
+      setFileMtimeOnComplete (task) {
+        const enabled = this.$store.state.preference.config.setFileMtimeOnComplete
+        if (!enabled) {
+          return
+        }
+
+        try {
+          const filePath = getTaskFullPath(task)
+          if (!existsSync(filePath)) {
+            return
+          }
+          const now = new Date()
+          utimesSync(filePath, now, now)
+        } catch (error) {
+          console.warn(`[Motrix] Failed to set file mtime on complete: ${error.message}`)
         }
       },
       showTaskCompleteNotify (task, isBT, path) {
@@ -356,7 +397,11 @@
       polling () {
         this.$store.dispatch('app/fetchGlobalStat')
         this.$store.dispatch('app/fetchProgress')
-        this.$store.dispatch('task/fetchList')
+        this.$store.dispatch('task/fetchList').then(() => {
+          this.checkMagnetAlerts()
+          const list = this.$store.state.task.taskList || []
+          list.forEach(task => this.maybeRestoreSuffixNearCompletion(task))
+        })
 
         if (this.taskDetailVisible && this.currentTaskGid) {
           if (this.currentTaskIsBT && this.enabledFetchPeers) {
@@ -365,6 +410,108 @@
             this.$store.dispatch('task/fetchItem', this.currentTaskGid)
           }
         }
+      },
+      maybeRestoreSuffixNearCompletion (task) {
+        try {
+          const suffix = this.$store.state.preference.config.downloadingFileSuffix
+          if (!suffix) return
+          const isBT = checkTaskIsBT(task)
+          if (isBT) return
+          const total = Number(task.totalLength || 0)
+          const done = Number(task.completedLength || 0)
+          if (total <= 0) return
+          const ratio = done / total
+          if (ratio < 0.99) return
+          const finalPath = getTaskFullPath(task)
+          const suffixedPath = finalPath + suffix
+          if (existsSync(suffixedPath) && !existsSync(finalPath)) {
+            const ok = this.renamePreserveTimes(suffixedPath, finalPath)
+            if (ok) {
+              console.log(`[Motrix] Restored suffix near completion: ${suffixedPath} -> ${finalPath}`)
+            }
+          }
+        } catch (_) {}
+      },
+      async alertMagnetStatus (task) {
+        try {
+          const gid = task.gid
+          const detailed = await api.fetchTaskItemWithPeers({ gid })
+          const peers = Array.isArray(detailed.peers) ? detailed.peers : []
+          const bt = detailed.bittorrent || {}
+          const announceList = bt.announceList || []
+          const trackerCount = Array.isArray(announceList) ? announceList.length : 0
+          const peerCount = peers.length
+
+          let phase = 'contacting_trackers'
+          if (trackerCount === 0) {
+            phase = 'no_trackers'
+          } else if (peerCount > 0) {
+            phase = 'peers_connected'
+          }
+          const cfg = this.$store.state.preference?.config || {}
+          const dhtListenPort = Number(cfg['dht-listen-port'] || 0)
+          const dhtEnabled = dhtListenPort > 0
+          this.$store.dispatch('task/updateMagnetStatus', {
+            gid,
+            peerCount,
+            trackerCount,
+            fetching: true,
+            phase,
+            dhtEnabled,
+            updatedAt: Date.now()
+          })
+          this.magnetAlertedSet.add(gid)
+        } catch (e) {
+          console.warn('alertMagnetStatus fail:', e.message)
+        }
+      },
+      checkMagnetAlerts () {
+        const list = this.$store.state.task.taskList || []
+        list.forEach(task => {
+          const gid = task.gid
+          const zero = Number(task.downloadSpeed) === 0
+          const magnetPending = isMagnetTask(task)
+
+          if (magnetPending && zero) {
+            const count = (this.magnetZeroMap[gid] || 0) + 1
+            this.magnetZeroMap[gid] = count
+            const elapsedSec = Math.round(count * (this.interval / 1000))
+            // 读取上一状态用于趋势判断
+            const prev = (this.$store.state.task.magnetStatuses || {})[gid] || {}
+            const prevPeers = Number(prev.peerCount || 0)
+            const peerCount = Number((task.peers || []).length || prevPeers)
+            let peerTrend = 'flat'
+            if (peerCount > prevPeers) peerTrend = 'up'
+            else if (peerCount < prevPeers) peerTrend = 'down'
+
+            const cfg = this.$store.state.preference?.config || {}
+            const limitStr = `${cfg['max-overall-download-limit'] || cfg.maxOverallDownloadLimit || 0}`
+            const globalLimitLow = !(limitStr === '0' || Number(limitStr) >= 102400)
+            const pauseMetadata = !!(cfg['pause-metadata'] || cfg.pauseMetadata)
+
+            this.$store.dispatch('task/updateMagnetStatus', {
+              gid,
+              fetching: true,
+              elapsedSec,
+              updatedAt: Date.now(),
+              peerCount,
+              peerTrend,
+              globalLimitLow,
+              pauseMetadata
+            })
+            if (count >= 3 && !this.magnetAlertedSet.has(gid)) {
+              this.alertMagnetStatus(task)
+            }
+          } else {
+            this.magnetZeroMap[gid] = 0
+            if (!magnetPending) {
+              this.$store.dispatch('task/clearMagnetStatus', gid)
+              if (this.magnetAlertedSet.has(gid)) {
+                this.magnetAlertedSet.delete(gid)
+              }
+            }
+          }
+        })
       },
       stopPolling () {
         clearTimeout(this.timer)

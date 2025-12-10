@@ -1,5 +1,5 @@
 import { extname, basename, dirname } from 'path'
-import { existsSync, mkdirSync, renameSync } from 'fs'
+import { existsSync, mkdirSync, renameSync, statSync, utimesSync } from 'fs'
 
 // 默认文件分类规则
 export const DEFAULT_CATEGORIES = {
@@ -83,7 +83,18 @@ export const moveFileToCategory = (originalPath, categorizedPath) => {
 
     // 移动文件
     if (existsSync(originalPath) && !existsSync(categorizedPath)) {
+      let at, mt
+      try {
+        const st = statSync(originalPath)
+        at = st.atime
+        mt = st.mtime
+      } catch (_) {}
       renameSync(originalPath, categorizedPath)
+      try {
+        if (at && mt) {
+          utimesSync(categorizedPath, at, mt)
+        }
+      } catch (_) {}
       console.log(`[Motrix] Moved file to category: ${originalPath} -> ${categorizedPath}`)
       return true
     } else if (existsSync(categorizedPath)) {
