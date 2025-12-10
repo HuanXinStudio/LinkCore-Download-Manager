@@ -143,6 +143,17 @@ export default class Api {
   }
 
   updateActiveTaskOption (options) {
+    // 复制 options 对象，避免修改原始对象
+    const activeTaskOptions = { ...options }
+    // 排除 dir 选项，确保正在下载的任务的下载路径不会被更改
+    // 这是因为更改正在下载任务的下载路径会导致任务重新开始下载
+    delete activeTaskOptions.dir
+
+    // 如果没有剩余选项，直接返回
+    if (isEmpty(activeTaskOptions)) {
+      return
+    }
+
     this.fetchTaskList({ type: 'active' })
       .then((data) => {
         if (isEmpty(data)) {
@@ -150,7 +161,7 @@ export default class Api {
         }
 
         const gids = data.map((task) => task.gid)
-        this.batchChangeOption({ gids, options })
+        this.batchChangeOption({ gids, options: activeTaskOptions })
       })
   }
 

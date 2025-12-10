@@ -1,22 +1,22 @@
 <template>
   <el-container class="content panel" direction="vertical">
-    <el-header class="panel-header" height="84">
-      <h4 class="hidden-xs-only">{{ title }}</h4>
-      <mo-subnav-switcher
-        :title="title"
-        :subnavs="subnavs"
-        class="hidden-sm-and-up"
-      />
-    </el-header>
-    <el-main class="panel-content">
-      <el-form
-        class="form-preference"
-        ref="basicForm"
-        label-position="right"
-        size="mini"
-        :model="form"
-        :rules="rules"
-      >
+      <el-header class="panel-header" height="84">
+        <h4 class="hidden-xs-only">{{ title }}</h4>
+        <mo-subnav-switcher
+          :title="title"
+          :subnavs="subnavs"
+          class="hidden-sm-and-up"
+        />
+      </el-header>
+      <el-main class="panel-content">
+        <el-form
+          class="form-preference"
+          ref="basicForm"
+          label-position="right"
+          size="mini"
+          :model="form"
+          :rules="rules"
+        >
         <!-- 外观设置卡片 -->
         <div class="preference-card">
           <h3 class="card-title">{{ $t('preferences.appearance') }}</h3>
@@ -309,7 +309,113 @@
             </el-col>
           </el-form-item>
         </div>
+
+        <!-- 文件管理卡片 -->
+        <div class="preference-card">
+          <h3 class="card-title">{{ $t('preferences.file-manage') }}</h3>
+          <el-form-item size="mini">
+            <el-col class="form-item-sub" :span="24">
+              <el-input
+                v-model="form.downloadingFileSuffix"
+                @change="autoSaveForm"
+                :placeholder="$t('preferences.downloading-file-suffix-tips')"
+                :label="$t('preferences.downloading-file-suffix')">
+                <template slot="prepend">
+                  {{ $t('preferences.downloading-file-suffix') }}
+                </template>
+              </el-input>
+            </el-col>
+            <!-- 自动分类文件设置 -->
+            <el-col class="form-item-sub" :span="24">
+              <el-checkbox v-model="form.autoCategorizeFiles" @change="autoSaveForm">
+                {{ $t('preferences.auto-categorize-files') }}
+              </el-checkbox>
+              <div class="el-form-item__info">
+                {{ $t('preferences.auto-categorize-files-tips') }}
+                <el-button
+                  type="primary"
+                  size="mini"
+                  @click="showCategoryDialog = true"
+                  class="edit-rules-btn"
+                  icon="el-icon-edit">
+                  {{ $t('preferences.file-categories-edit') }}
+                </el-button>
+              </div>
+            </el-col>
+          </el-form-item>
+        </div>
       </el-form>
+
+      <!-- 文件分类规则编辑弹窗 -->
+      <el-dialog
+        :title="$t('preferences.file-categories')"
+        :visible.sync="showCategoryDialog"
+        width="800px"
+        custom-class="tab-title-dialog category-rules-dialog"
+        @open="handleCategoryDialogOpen"
+        @close="handleCategoryDialogClose"
+        :before-close="handleCategoryDialogBeforeClose"
+      >
+    <div class="category-dialog-content">
+      <div class="category-list">
+        <div
+          v-for="(category, key) in tempFileCategories"
+          :key="key"
+          class="category-item"
+        >
+          <div class="category-header">
+            <el-input
+              v-model="category.name"
+              :placeholder="$t('preferences.file-categories-folder-name')"
+              size="mini"
+              style="width: 200px; margin-right: 10px;"
+              @input="handleCategoryChange"
+            />
+            <el-input
+              v-model="category.extensions"
+              :placeholder="$t('preferences.file-categories-extensions')"
+              size="mini"
+              style="flex: 1; margin-right: 10px;"
+              @input="handleCategoryChange"
+            />
+            <el-button
+              type="danger"
+              size="mini"
+              @click="removeCategory(key)"
+              :disabled="key === 'others'"
+            >
+              {{ $t('preferences.file-categories-remove') }}
+            </el-button>
+          </div>
+          <div class="category-info">
+            <span class="category-key">{{ $t('preferences.file-categories-key') }}: {{ key }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 弹窗底部操作按钮 -->
+    <div slot="footer" class="dialog-footer">
+      <div style="flex: 1"></div>
+      <el-button
+        type="primary"
+        size="mini"
+        @click="addNewCategory"
+      >
+        {{ $t('preferences.file-categories-add') }}
+      </el-button>
+      <div style="flex: 1"></div>
+      <el-button
+        type="primary"
+        @click="handleCategoryDialogSave"
+        :disabled="!hasCategoryChanges"
+        style="opacity: 1;"
+      >
+        {{ $t('preferences.save') }}
+      </el-button>
+    </div>
+
+  </el-dialog>
     </el-main>
   </el-container>
 </template>
@@ -346,6 +452,7 @@
       btForceEncryption,
       btSaveMetadata,
       dir,
+      downloadingFileSuffix,
       engineMaxConnectionPerServer,
       followMetalink,
       followTorrent,
@@ -368,7 +475,9 @@
       showProgressBar,
       taskNotification,
       theme,
-      traySpeedometer
+      traySpeedometer,
+      autoCategorizeFiles,
+      fileCategories
     } = config
 
     const btAutoDownloadContent = followTorrent &&
@@ -382,6 +491,7 @@
       btSaveMetadata,
       continue: config.continue,
       dir,
+      downloadingFileSuffix,
       engineMaxConnectionPerServer,
       followMetalink,
       followTorrent,
@@ -404,7 +514,17 @@
       showProgressBar,
       taskNotification,
       theme,
-      traySpeedometer
+      traySpeedometer,
+      autoCategorizeFiles: autoCategorizeFiles || false,
+      fileCategories: fileCategories || {
+        images: { name: 'image-files', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'] },
+        documents: { name: 'document-files', extensions: ['pdf', 'doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx'] },
+        audio: { name: 'audio-files', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma'] },
+        video: { name: 'video-files', extensions: ['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm'] },
+        archives: { name: 'archive-files', extensions: ['zip', 'rar', '7z', 'tar', 'gz'] },
+        programs: { name: 'program-files', extensions: ['exe', 'msi', 'dmg', 'pkg', 'deb', 'rpm'] },
+        others: { name: 'other-files', extensions: [] }
+      }
     }
     return result
   }
@@ -432,7 +552,10 @@
         saveTimeout: null,
         originalLocale: locale, // 记录用户初始选择的语言
         localeChanged: false, // 语言是否已更改
-        originalLanguageText: this.$t('preferences.undo-change') // 记录初始语言的"撤回更改"文本
+        originalLanguageText: this.$t('preferences.undo-change'), // 记录初始语言的"撤回更改"文本
+        showCategoryDialog: false, // 是否显示分类规则编辑弹窗
+        tempFileCategories: null, // 弹窗临时数据
+        originalFileCategories: null // 原始分类数据，用于检测修改
       }
     },
     computed: {
@@ -472,6 +595,13 @@
         set (value) {
           return value
         }
+      },
+      // 检测分类数据是否有修改
+      hasCategoryChanges () {
+        if (!this.tempFileCategories || !this.originalFileCategories) {
+          return false
+        }
+        return JSON.stringify(this.tempFileCategories) !== JSON.stringify(this.originalFileCategories)
       },
       uploadUnit: {
         get () {
@@ -545,7 +675,25 @@
       },
       ...mapState('preference', {
         config: state => state.config
-      })
+      }),
+      // 本地化文件分类名称
+      localizedFileCategories () {
+        const categories = { ...this.form.fileCategories }
+
+        // 遍历所有分类，将名称键值转换为本地化文本
+        Object.keys(categories).forEach(key => {
+          const category = categories[key]
+          // 如果名称是键值（如'image-files'），则进行本地化
+          if (category.name && category.name.includes('-files')) {
+            categories[key] = {
+              ...category,
+              name: this.$t(`preferences.${category.name}`)
+            }
+          }
+        })
+
+        return categories
+      }
     },
     watch: {
       form: {
@@ -570,11 +718,22 @@
           clearTimeout(this.saveTimeout)
         }
         this.saveTimeout = setTimeout(() => {
+          // 验证下载中文件后缀格式
+          this.validateDownloadingFileSuffix()
+
           // Double-check there are actual changes before submitting
           if (!isEmpty(diffConfig(this.formOriginal, this.form))) {
             this.submitForm('basicForm')
           }
         }, 100)
+      },
+      validateDownloadingFileSuffix () {
+        const suffix = this.form.downloadingFileSuffix
+        if (suffix && suffix.trim() !== '' && !suffix.startsWith('.')) {
+          // 如果用户输入的后缀不以"."开头，自动添加"."
+          this.form.downloadingFileSuffix = '.' + suffix
+          this.$msg.warning(this.$t('preferences.downloading-file-suffix-format-warning'))
+        }
       },
       handleLocaleChange (locale) {
         const lng = getLanguage(locale)
@@ -624,6 +783,135 @@
       onDirectorySelected (dir) {
         this.form.dir = dir
         this.autoSaveForm()
+      },
+      // 弹窗打开时初始化临时数据
+      handleCategoryDialogOpen () {
+        // 深拷贝原始数据到临时数据
+        this.tempFileCategories = cloneDeep(this.form.fileCategories)
+        this.originalFileCategories = cloneDeep(this.form.fileCategories)
+      },
+
+      // 弹窗关闭时清理临时数据
+      handleCategoryDialogClose () {
+        this.tempFileCategories = null
+        this.originalFileCategories = null
+      },
+
+      // 弹窗保存操作
+      handleCategoryDialogSave () {
+        // 验证分类数据
+        const valid = this.validateCategories()
+        if (!valid) {
+          return
+        }
+
+        // 将临时数据同步到主表单
+        this.form.fileCategories = cloneDeep(this.tempFileCategories)
+
+        // 强制触发Vue响应式更新
+        this.$set(this.form, 'fileCategories', { ...this.form.fileCategories })
+
+        // 保存更改
+        this.autoSaveForm()
+
+        // 关闭弹窗
+        this.showCategoryDialog = false
+
+        this.$message({
+          type: 'success',
+          message: this.$t('preferences.save-success-message')
+        })
+      },
+
+      handleCategoryDialogBeforeClose (done) {
+        if (this.hasCategoryChanges) {
+          this.$confirm(this.$t('preferences.file-categories-close-confirm'), this.$t('preferences.file-categories-close-title'), {
+            confirmButtonText: this.$t('preferences.file-categories-close-confirm-button'),
+            cancelButtonText: this.$t('preferences.file-categories-close-cancel-button'),
+            type: 'warning'
+          }).then(() => {
+            // 用户选择保存并退出
+            this.handleCategoryDialogSave()
+            done()
+          }).catch(() => {
+            // 用户选择不保存直接退出
+            done()
+          })
+        } else {
+          // 没有更改，直接关闭
+          done()
+        }
+      },
+
+      // 添加新的分类规则
+      addNewCategory () {
+        // 生成唯一的分类键
+        const newCategoryKey = 'new_category_' + Date.now()
+
+        // 添加新的分类配置到临时数据
+        this.$set(this.tempFileCategories, newCategoryKey, {
+          name: this.$t('preferences.file-categories-new-folder-name'),
+          extensions: []
+        })
+      },
+      // 删除分类规则
+      removeCategory (categoryKey) {
+        this.$confirm(
+          this.$t('preferences.file-categories-remove-confirm'),
+          this.$t('preferences.file-categories-remove-title'),
+          {
+            confirmButtonText: this.$t('preferences.file-categories-remove-confirm-button'),
+            cancelButtonText: this.$t('preferences.file-categories-remove-cancel-button'),
+            type: 'warning'
+          }
+        ).then(() => {
+          // 删除临时数据中的分类
+          this.$delete(this.tempFileCategories, categoryKey)
+
+          this.$message({
+            type: 'success',
+            message: this.$t('preferences.file-categories-remove-success')
+          })
+        }).catch(() => {
+          // 用户取消删除
+        })
+      },
+
+      // 处理分类数据实时更新
+      handleCategoryChange () {
+        // 验证分类数据
+        const valid = this.validateCategories()
+        if (!valid) {
+          // 验证失败，不执行任何操作
+        }
+      },
+
+      // 验证分类数据
+      validateCategories () {
+        for (const category of Object.values(this.form.fileCategories)) {
+          // 检查文件夹名称
+          if (!category.name || category.name.trim() === '') {
+            this.$message({
+              type: 'error',
+              message: this.$t('preferences.file-categories-name-required')
+            })
+            return false
+          }
+
+          // 检查扩展名格式
+          if (category.extensions && category.extensions.length > 0) {
+            for (const ext of category.extensions) {
+              if (ext && ext.includes('.')) {
+                this.$message({
+                  type: 'error',
+                  message: this.$t('preferences.file-categories-ext-format-error')
+                })
+                return false
+              }
+            }
+          }
+        }
+        return true
       },
       syncFormConfig () {
         this.$store.dispatch('preference/fetchPreference')
@@ -701,3 +989,214 @@
     }
   }
 </script>
+
+<style lang="scss" scoped>
+ .content {
+   height: 100%;
+ }
+
+ .panel {
+   background: var(--panel-background);
+ }
+
+ .panel-header {
+   padding: 0 24px;
+   border-bottom: 1px solid var(--border-color);
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+ }
+
+ .panel-content {
+   padding: 0;
+ }
+
+ /* 文件分类样式 */
+ .category-list {
+   margin-top: 12px;
+ }
+
+ .category-item {
+   margin-bottom: 12px;
+   padding: 8px;
+   border: 1px solid var(--border-color);
+   border-radius: 4px;
+   background: var(--background-color-light);
+ }
+
+ .category-item:last-child {
+   margin-bottom: 0;
+ }
+
+ .category-item h4 {
+   margin: 0 0 8px 0;
+   font-size: 14px;
+   font-weight: 500;
+   color: $--color-text-primary;
+ }
+
+ /* 弹窗样式 */
+ .category-dialog-content {
+   max-height: 400px;
+   overflow-y: auto;
+   margin-bottom: 60px; /* 为底部按钮留出空间 */
+ }
+
+ /* 弹窗标题样式 */
+ :deep(.el-dialog__title) {
+   color: var(--text-color-primary, #303133);
+ }
+
+ /* 弹窗整体样式 */
+ :deep(.el-dialog) {
+   border: 1px solid var(--border-color);
+ }
+
+ :deep(.el-dialog__header) {
+   border-bottom: 1px solid var(--border-color);
+ }
+
+ :deep(.el-dialog__body) {
+   color: var(--text-color-primary, #303133);
+   padding-bottom: 0;
+ }
+
+/* 使文件分类规则弹窗的遮罩层与新建任务弹窗一致 */
+.el-dialog.category-rules-dialog {
+  :deep(.el-dialog__wrapper) {
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
+ .category-header {
+   display: flex;
+   align-items: center;
+   margin-bottom: 8px;
+ }
+
+ .category-info {
+   font-size: 12px;
+   color: var(--text-color-secondary);
+ }
+
+ .category-key {
+   background: var(--background-color-light);
+   padding: 2px 6px;
+   border-radius: 3px;
+   font-family: monospace;
+   color: var(--text-color-primary);
+ }
+
+ .dialog-actions {
+   margin-top: 16px;
+   text-align: center;
+ }
+
+ .dialog-footer {
+   position: fixed;
+   bottom: 0;
+   left: 0;
+   right: 0;
+   background: var(--panel-background);
+   padding: 16px 24px;
+   border-top: 1px solid var(--border-color);
+   display: flex;
+   align-items: center;
+   z-index: 1000;
+ }
+
+ /* 确保弹窗底部有足够空间 */
+ :deep(.el-dialog__footer) {
+   padding: 0;
+ }
+
+ /* 弹窗输入框和按钮的样式适配 */
+ :deep(.el-input__inner) {
+   background: var(--input-background);
+   border-color: var(--border-color);
+   color: var(--text-color-primary);
+ }
+
+ :deep(.el-input__inner:focus) {
+   border-color: var(--primary-color);
+ }
+
+ :deep(.el-button:not(.el-button--primary)) {
+   background: var(--button-background);
+   border-color: var(--border-color);
+   color: var(--text-color-primary);
+ }
+
+ :deep(.el-button--primary) {
+   background: var(--primary-color);
+   border-color: var(--primary-color);
+   color: #fff;
+ }
+
+ :deep(.el-button--primary:disabled) {
+   background: var(--primary-color);
+   border-color: var(--primary-color);
+   color: #fff;
+   cursor: not-allowed;
+ }
+
+ /* 编辑规则按钮优化样式 */
+ .edit-rules-btn {
+   margin-left: 8px;
+   padding: 6px 12px;
+   border-radius: 6px;
+   font-weight: 500;
+   transition: all 0.2s ease-in-out;
+   border: 1px solid transparent;
+   background: var(--primary-color);
+   color: #fff;
+ }
+
+ /* 白天模式适配 */
+ .theme-light .edit-rules-btn {
+   color: #000;
+ }
+
+ .theme-light .edit-rules-btn:hover {
+   color: #000;
+   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-light-1) 100%);
+ }
+
+ .edit-rules-btn:hover {
+   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-light-1) 100%);
+   border-color: var(--primary-color-light-1);
+ }
+
+ .edit-rules-btn:active {
+   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-light-1) 100%);
+   border-color: var(--primary-color-light-1);
+ }
+
+ .edit-rules-btn .el-icon-edit {
+   margin-right: 4px;
+   font-size: 12px;
+ }
+
+ /* 黑夜模式适配 */
+ .theme-dark .edit-rules-btn {
+   background: var(--primary-color);
+   border-color: transparent;
+   color: #fff;
+ }
+
+ .theme-dark .edit-rules-btn:hover {
+   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-light-1) 100%);
+   border-color: var(--primary-color-light-1);
+ }
+
+ .theme-dark .edit-rules-btn:active {
+   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-light-1) 100%);
+   border-color: var(--primary-color-light-1);
+ }
+
+ /* 确保按钮在信息文本中正确对齐 */
+ .el-form-item__info .edit-rules-btn {
+   vertical-align: middle;
+   margin-top: -2px;
+ }
+</style>

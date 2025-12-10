@@ -103,7 +103,9 @@ export default class ConfigManager {
         'auto-check-update': is.macOS(),
         'auto-hide-window': false,
         'auto-sync-tracker': true,
+        'downloading-file-suffix': '',
         'enable-upnp': true,
+        'engine-binary': '',
         'engine-max-connection-per-server': getMaxConnectionPerServer(),
         'favorite-directories': [],
         'hide-app-menu': false,
@@ -203,11 +205,43 @@ export default class ConfigManager {
   }
 
   setSystemConfig (...args) {
-    this.systemConfig.set(...args)
+    if (args.length === 1 && typeof args[0] === 'object') {
+      // 处理对象参数，支持删除属性
+      const config = args[0]
+      Object.keys(config).forEach(key => {
+        const value = config[key]
+        if (value === undefined) {
+          // 如果值为undefined，删除该属性
+          this.systemConfig.delete(key)
+        } else {
+          // 否则设置属性值
+          this.systemConfig.set(key, value)
+        }
+      })
+    } else {
+      // 处理键值对参数
+      this.systemConfig.set(...args)
+    }
   }
 
   setUserConfig (...args) {
-    this.userConfig.set(...args)
+    if (args.length === 1 && typeof args[0] === 'object') {
+      // 处理对象参数，支持删除属性
+      const config = args[0]
+      Object.keys(config).forEach(key => {
+        const value = config[key]
+        if (value === undefined) {
+          // 如果值为undefined，删除该属性
+          this.userConfig.delete(key)
+        } else {
+          // 否则设置属性值
+          this.userConfig.set(key, value)
+        }
+      })
+    } else {
+      // 处理键值对参数
+      this.userConfig.set(...args)
+    }
   }
 
   reset () {

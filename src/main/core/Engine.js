@@ -1,15 +1,19 @@
 import { spawn } from 'node:child_process'
 import { existsSync, writeFile, unlink } from 'node:fs'
+import { resolve } from 'node:path'
 import is from 'electron-is'
 
 import logger from './Logger'
-import { getI18n } from '../ui/Locale'
+import {
+  getI18n
+} from '../ui/Locale'
 import {
   getEnginePidPath,
-  getAria2BinPath,
   getAria2ConfPath,
   getSessionPath,
-  transformConfig
+  transformConfig,
+  getEngineBin,
+  getEnginePath
 } from '../utils/index'
 
 const { platform, arch } = process
@@ -24,6 +28,7 @@ export default class Engine {
     this.i18n = getI18n()
     this.systemConfig = options.systemConfig
     this.userConfig = options.userConfig
+    this.configManager = options.configManager // 接收ConfigManager实例
   }
 
   start () {
@@ -83,7 +88,78 @@ export default class Engine {
   }
 
   getEngineBinPath () {
-    const result = getAria2BinPath(platform, arch)
+    let binName = ''
+    const enginePath = getEnginePath(platform, arch)
+
+    // 优先从ConfigManager获取最新配置
+    if (this.configManager) {
+      binName = this.configManager.getUserConfig('engine-binary') || ''
+      logger.info(`[Motrix] Got engine from config manager: ${binName}`)
+    } else {
+      // 降级：从传入的userConfig对象获取
+      binName = this.userConfig['engine-binary'] || ''
+      logger.info(`[Motrix] Got engine from user config: ${binName}`)
+    }
+
+    // 获取可用引擎列表
+    let availableEngines = []
+    try {
+      const files = require('fs').readdirSync(enginePath)
+      availableEngines = files.filter(file => {
+        const filePath = resolve(enginePath, file)
+        const stats = require('fs').lstatSync(filePath)
+        return stats.isFile() && file.includes('aria2c') &&
+               !file.endsWith('.backup') && !file.endsWith('.tmp')
+      })
+    } catch (error) {
+      logger.error('[Motrix] Failed to read engine directory:', error)
+    }
+
+    // 1. 检查当前配置的引擎是否存在
+    if (binName) {
+      const binPath = resolve(enginePath, binName)
+      if (!existsSync(binPath)) {
+        // 当前配置的引擎不存在，尝试使用可用引擎
+        logger.warn(`[Motrix] Configured engine ${binName} not found, trying to find available engines`)
+        binName = ''
+      }
+    }
+
+    // 2. 如果用户没有配置引擎或配置的引擎不存在，尝试查找默认引擎或可用引擎
+    if (!binName) {
+      // 默认引擎文件名
+      const defaultBinName = getEngineBin(platform)
+      const defaultPath = resolve(enginePath, defaultBinName)
+
+      if (existsSync(defaultPath)) {
+        // 默认引擎文件存在，使用默认引擎
+        binName = defaultBinName
+      } else if (availableEngines.length > 0) {
+        // 默认引擎文件不存在，使用可用引擎
+        // 优先选择包含1.37.0的引擎
+        const specificEngine = availableEngines.find(file => file.includes('1.37.0'))
+        if (specificEngine) {
+          binName = specificEngine
+        } else {
+          // 否则使用第一个找到的引擎
+          binName = availableEngines[0]
+        }
+        // 保存为默认引擎，下次启动使用
+        logger.info(`[Motrix] Using available engine ${binName} as default`)
+        // 使用ConfigManager保存配置到文件
+        if (this.configManager) {
+          this.configManager.setUserConfig('engine-binary', binName)
+          logger.info(`[Motrix] Engine configuration saved: ${binName}`)
+        } else {
+          logger.warn('[Motrix] ConfigManager not available, cannot save engine configuration')
+        }
+      } else {
+        // 没有找到任何引擎文件，使用默认引擎名（会失败）
+        binName = defaultBinName
+      }
+    }
+
+    const result = resolve(enginePath, binName)
     const binIsExist = existsSync(result)
     if (!binIsExist) {
       logger.error('[Motrix] engine bin is not exist:', result)

@@ -370,13 +370,23 @@
   /* Dialog */
   .el-dialog {
     background-color: $--dk-dialog-background;
+    border-radius: 12px;
+    overflow: hidden;
+    .el-dialog__header .el-dialog__title {
+      color: #ffffff;
+    }
     .el-dialog__body {
       color: $--dk-dialog-text-color;
     }
   }
 
+  .el-message-box {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
   .add-task-dialog .el-dialog__footer {
-    background-color: $--dk-add-task-dialog-footer-background;
+    background-color: transparent;
   }
 
   .torrent-file-list {
@@ -384,17 +394,17 @@
   }
 
   .el-table {
-    background-color: $--dk-table-background;
+    background-color: transparent !important;
     color: $--dk-table-text-color;
     tr {
-      background-color: $--dk-table-background;
+      background-color: transparent !important;
     }
     th {
-      background-color: $--dk-table-th-background;
+      background-color: transparent !important;
       color: $--dk-table-text-color;
     }
     th.is-leaf, td {
-      background-color: $--dk-table-background;
+      background-color: transparent !important;
       color: $--dk-table-text-color;
       border-bottom-color: $--dk-table-border-color;
     }

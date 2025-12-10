@@ -1,4 +1,5 @@
 import { isEmpty } from 'lodash'
+import { existsSync, mkdirSync } from 'node:fs'
 
 import {
   ADD_TASK_TYPE,
@@ -7,6 +8,10 @@ import {
 } from '@shared/constants'
 import { splitTaskLinks } from '@shared/utils'
 import { buildOuts } from '@shared/utils/rename'
+import {
+  buildCategorizedPaths,
+  shouldCategorizeFiles
+} from '@shared/utils/file-categorize'
 
 import {
   buildUrisFromCurl,
@@ -36,6 +41,7 @@ export const initTaskForm = state => {
     maxConnectionPerServer,
     newTaskShowDownloading,
     out: '',
+    customOuts: [],
     referer: '',
     selectFile: NONE_SELECTED_FILES,
     split,
@@ -111,8 +117,8 @@ export const buildOption = (type, form) => {
   return result
 }
 
-export const buildUriPayload = (form) => {
-  let { uris, out } = form
+export const buildUriPayload = (form, autoCategorize = false, categories = null) => {
+  let { uris, out, dir } = form
   if (isEmpty(uris)) {
     throw new Error('task.new-task-uris-required')
   }
@@ -120,14 +126,44 @@ export const buildUriPayload = (form) => {
   uris = splitTaskLinks(uris)
   const curlHeaders = buildHeadersFromCurl(uris)
   uris = buildUrisFromCurl(uris)
-  const outs = buildOuts(uris, out)
+  let outs = []
+  if (Array.isArray(form.customOuts) && form.customOuts.length === uris.length) {
+    outs = [...form.customOuts]
+  } else {
+    outs = buildOuts(uris, out)
+  }
 
   form = buildDefaultOptionsFromCurl(form, curlHeaders)
+
+  // 如果启用了自动分类功能，处理文件分类
+  let categorizedOuts = outs
+  if (shouldCategorizeFiles(autoCategorize, categories) && dir) {
+    const categorizedPaths = buildCategorizedPaths(uris, outs, categories, dir)
+    // 对于每个文件，将outs设置为文件名，将options.dir设置为分类目录
+    // 这样aria2就不会将路径重复拼接
+    categorizedOuts = categorizedPaths.map(item => item.categorizedPath.split('/').pop())
+    // 更新form.dir为分类目录，这样buildOption函数会使用正确的目录
+    // 注意：如果有多个文件，会使用第一个文件的分类目录
+    // 这是因为aria2只支持一个dir参数，所以如果有多个不同类型的文件，可能会有问题
+    // 但这是当前架构的限制，需要后续优化
+    if (categorizedPaths.length > 0) {
+      form.dir = categorizedPaths[0].categorizedDir
+      // 在下载前创建分类目录，这样下载完成后就不需要再次创建了
+      if (!existsSync(form.dir)) {
+        try {
+          mkdirSync(form.dir, { recursive: true })
+          console.log(`[Motrix] Created category directory: ${form.dir}`)
+        } catch (error) {
+          console.warn(`[Motrix] Failed to create category directory: ${error.message}`)
+        }
+      }
+    }
+  }
 
   const options = buildOption(ADD_TASK_TYPE.URI, form)
   const result = {
     uris,
-    outs,
+    outs: categorizedOuts,
     options
   }
   return result

@@ -17,7 +17,7 @@ import {
   fetchBtTrackerFromSource,
   reduceTrackerString
 } from '@shared/utils/tracker'
-import { showItemInFolder } from './utils'
+import { showItemInFolder, getEngineList, getAria2ConfPath } from './utils'
 import logger from './core/Logger'
 import Context from './core/Context'
 import ConfigManager from './core/ConfigManager'
@@ -174,7 +174,8 @@ export default class Application extends EventEmitter {
     try {
       this.engine = new Engine({
         systemConfig: this.configManager.getSystemConfig(),
-        userConfig: this.configManager.getUserConfig()
+        userConfig: this.configManager.getUserConfig(),
+        configManager: this.configManager // 将configManager传递给Engine
       })
       this.engine.start()
     } catch (err) {
@@ -1161,6 +1162,41 @@ export default class Application extends EventEmitter {
         version: appVersion
       }
       return result
+    })
+
+    ipcMain.handle('get-engine-list', async () => {
+      const { platform, arch } = process
+      const engines = getEngineList(platform, arch)
+      return engines
+    })
+
+    ipcMain.handle('aria2-conf:read', async () => {
+      const { platform, arch } = process
+      const confPath = getAria2ConfPath(platform, arch)
+      const fs = require('node:fs')
+      let content = ''
+      try {
+        if (fs.existsSync(confPath)) {
+          content = fs.readFileSync(confPath, 'utf8')
+        }
+      } catch (e) {
+        logger.warn('[Motrix] read aria2.conf failed:', e.message)
+      }
+      return { path: confPath, content }
+    })
+
+    ipcMain.handle('aria2-conf:write', async (_event, payload = {}) => {
+      const { platform, arch } = process
+      const confPath = getAria2ConfPath(platform, arch)
+      const { content = '' } = payload || {}
+      const fs = require('node:fs')
+      try {
+        fs.writeFileSync(confPath, content, 'utf8')
+        return { success: true, path: confPath }
+      } catch (e) {
+        logger.error('[Motrix] write aria2.conf failed:', e.message)
+        return { success: false, error: e.message, path: confPath }
+      }
     })
   }
 

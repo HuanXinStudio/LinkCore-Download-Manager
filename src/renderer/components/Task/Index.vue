@@ -139,9 +139,11 @@
         this.$store.dispatch('app/updateAddTaskOptions', newOptions)
         this.$store.dispatch('app/showAddTaskDialog', ADD_TASK_TYPE.URI)
       },
-      deleteTaskFiles (task) {
+      async deleteTaskFiles (task) {
         try {
-          const result = moveTaskFilesToTrash(task)
+          // 获取下载中文件后缀配置
+          const downloadingFileSuffix = this.$store.state.preference.config.downloadingFileSuffix || ''
+          const result = await moveTaskFilesToTrash(task, downloadingFileSuffix)
 
           if (!result) {
             throw new Error('task.remove-task-file-fail')
@@ -150,21 +152,21 @@
           this.$msg.error(this.$t(err.message))
         }
       },
-      removeTask (task, taskName, isRemoveWithFiles = false) {
-        this.$store.dispatch('task/forcePauseTask', task)
-          .finally(() => {
+      async removeTask (task, taskName, isRemoveWithFiles = false) {
+        await this.$store.dispatch('task/forcePauseTask', task)
+          .finally(async () => {
             if (isRemoveWithFiles) {
-              this.deleteTaskFiles(task)
+              await this.deleteTaskFiles(task)
             }
 
             return this.removeTaskItem(task, taskName)
           })
       },
-      removeTaskRecord (task, taskName, isRemoveWithFiles = false) {
-        this.$store.dispatch('task/forcePauseTask', task)
-          .finally(() => {
+      async removeTaskRecord (task, taskName, isRemoveWithFiles = false) {
+        await this.$store.dispatch('task/forcePauseTask', task)
+          .finally(async () => {
             if (isRemoveWithFiles) {
-              this.deleteTaskFiles(task)
+              await this.deleteTaskFiles(task)
             }
 
             return this.removeTaskRecordItem(task, taskName)
@@ -210,7 +212,9 @@
           })
       },
       batchDeleteTaskFiles (taskList) {
-        const promises = taskList.map((task, index) => delayDeleteTaskFiles(task, index * 200))
+        // 获取下载中文件后缀配置
+        const downloadingFileSuffix = this.$store.state.preference.config.downloadingFileSuffix || ''
+        const promises = taskList.map((task, index) => delayDeleteTaskFiles(task, index * 200, downloadingFileSuffix))
         Promise.allSettled(promises).then(results => {
           console.log('[Motrix] batch delete task files: ', results)
         })

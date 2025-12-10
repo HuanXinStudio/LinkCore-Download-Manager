@@ -8,9 +8,7 @@ import {
   isNaN,
   isPlainObject,
   kebabCase,
-  omitBy,
-  parseInt,
-  pick
+  parseInt
 } from 'lodash'
 import bitTorrentPeerId from 'bittorrent-peerid'
 
@@ -401,7 +399,7 @@ export const fixValue = (obj = {}) => {
   return result
 }
 
-export const separateConfig = (options) => {
+export const separateConfig = (options = {}) => {
   // user
   const user = {}
   // system
@@ -410,6 +408,11 @@ export const separateConfig = (options) => {
   const others = {}
 
   for (const [k, v] of Object.entries(options)) {
+    // 跳过值为undefined的属性，表示该属性应该被删除
+    if (v === undefined) {
+      continue
+    }
+
     if (userKeys.indexOf(k) !== -1) {
       user[k] = v
     } else if (systemKeys.indexOf(k) !== -1) {
@@ -572,12 +575,29 @@ export const removeExtensionDot = (extension = '') => {
 }
 
 export const diffConfig = (current = {}, next = {}) => {
-  const curr = pick(current, Object.keys(next))
-  const result = omitBy(next, (val, key) => {
-    if (isArray(val) || isPlainObject(val)) {
-      return JSON.stringify(curr[key]) === JSON.stringify(val)
+  const result = {}
+
+  // 检查next中新增或修改的属性
+  Object.keys(next).forEach(key => {
+    const currentVal = current[key]
+    const nextVal = next[key]
+
+    if (isArray(nextVal) || isPlainObject(nextVal)) {
+      if (JSON.stringify(currentVal) !== JSON.stringify(nextVal)) {
+        result[key] = nextVal
+      }
+    } else if (currentVal !== nextVal) {
+      result[key] = nextVal
     }
-    return curr[key] === val
+  })
+
+  // 检查current中被删除的属性（在next中不存在）
+  Object.keys(current).forEach(key => {
+    if (!(key in next)) {
+      // 对于被删除的属性，设置一个特殊标记或null值
+      // 这里使用undefined表示该属性应该被删除
+      result[key] = undefined
+    }
   })
 
   return result

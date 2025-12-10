@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import { access, constants, existsSync, lstatSync } from 'node:fs'
+import { access, constants, existsSync, lstatSync, readdirSync } from 'node:fs'
 import { app, nativeTheme, shell } from 'electron'
 import is from 'electron-is'
 
@@ -211,4 +211,56 @@ export const showItemInFolder = (fullPath) => {
 
     shell.showItemInFolder(fullPath)
   })
+}
+
+/**
+ * 获取引擎目录下的所有引擎
+ * @param {string} platform - 平台
+ * @param {string} arch - 架构
+ * @returns {Array} 引擎列表
+ */
+export const getEngineList = (platform, arch) => {
+  const enginePath = getEnginePath(platform, arch)
+  const engines = []
+
+  try {
+    if (existsSync(enginePath)) {
+      const files = readdirSync(enginePath)
+      const binName = getEngineBin(platform)
+
+      // 查找所有可执行文件，特别是与aria2c相关的文件，过滤掉临时文件和备份文件
+      files.forEach(file => {
+        const filePath = resolve(enginePath, file)
+        const stats = lstatSync(filePath)
+
+        // 过滤条件：
+        // 1. 必须是文件
+        // 2. 包含aria2c
+        // 3. 不是备份文件（不以.backup结尾）
+        // 4. 不是临时文件（不以.tmp结尾）
+        if (stats.isFile() &&
+            file.includes('aria2c') &&
+            !file.endsWith('.backup') &&
+            !file.endsWith('.tmp')) {
+          engines.push(file)
+        }
+      })
+
+      // 仅当默认引擎实际存在于引擎目录时，确保它位于列表首位
+      const defaultBinPath = resolve(enginePath, binName)
+      if (existsSync(defaultBinPath)) {
+        if (engines.includes(binName)) {
+          // 去重并置顶
+          const filtered = engines.filter(e => e !== binName)
+          engines.splice(0, engines.length, binName, ...filtered)
+        } else {
+          engines.unshift(binName)
+        }
+      }
+    }
+  } catch (error) {
+    logger.error(`[Motrix] Get engine list failed: ${error}`)
+  }
+
+  return engines
 }

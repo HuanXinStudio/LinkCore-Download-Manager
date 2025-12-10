@@ -25,26 +25,37 @@
             >
             </el-input>
           </el-form-item>
+          <div class="parsed-preview" v-if="parsedTasks.length > 0 && type === 'uri'">
+            <div class="parsed-preview__header">{{ $t('task.parsed-tasks') }}</div>
+            <el-table :data="parsedTasks" :border="false" :stripe="true" size="mini" style="width: 100%" height="150">
+              <el-table-column :label="$t('task.task-name')" min-width="240">
+                <template slot-scope="scope">
+                  <span v-if="!scope.row.editing" @dblclick="enableNameEdit(scope.$index)">{{ scope.row.name }}</span>
+                  <el-input
+                    v-else
+                    size="mini"
+                    v-model="scope.row.name"
+                    @blur="disableNameEdit(scope.$index)"
+                    @keyup.enter.native="disableNameEdit(scope.$index)"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column :label="$t('task.file-size')" min-width="120">
+                <template slot-scope="scope">
+                  <span>{{ scope.row.sizeText }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
         </el-tab-pane>
         <el-tab-pane :label="$t('task.torrent-task')" name="torrent">
           <el-form-item>
-            <mo-select-torrent v-on:change="handleTorrentChange" />
+            <mo-select-torrent ref="selectTorrent" v-on:change="handleTorrentChange" />
           </el-form-item>
         </el-tab-pane>
       </el-tabs>
       <el-row :gutter="12">
-        <el-col :span="15" :xs="24">
-          <el-form-item
-            :label="`${$t('task.task-out')}: `"
-            :label-width="formLabelWidth"
-          >
-            <el-input
-              :placeholder="$t('task.task-out-tips')"
-              v-model="form.out"
-            >
-            </el-input>
-          </el-form-item>
-        </el-col>
+
         <el-col :span="9" :xs="24">
           <el-form-item
             :label="`${$t('task.task-split')}: `"
@@ -161,7 +172,7 @@
           </el-checkbox>
         </el-form-item>
       </div>
-    </el-form>
+  </el-form>
     <button
       slot="title"
       type="button"
@@ -172,15 +183,12 @@
     </button>
     <div slot="footer" class="dialog-footer">
       <el-row>
-        <el-col :span="9" :xs="9">
+        <el-col :span="12" :xs="12">
           <el-checkbox class="chk" v-model="showAdvanced">
             {{$t('task.show-advanced-options')}}
           </el-checkbox>
         </el-col>
-        <el-col :span="15" :xs="15">
-          <el-button @click="handleCancel('taskForm')">
-            {{$t('app.cancel')}}
-          </el-button>
+        <el-col :span="12" :xs="12" style="text-align: right;">
           <el-button
             type="primary"
             @click="submitForm('taskForm')"
@@ -197,6 +205,7 @@
   import is from 'electron-is'
   import { mapState } from 'vuex'
   import { isEmpty } from 'lodash'
+  import fetch from 'node-fetch'
   import HistoryDirectory from '@/components/Preference/HistoryDirectory'
   import SelectDirectory from '@/components/Native/SelectDirectory'
   import SelectTorrent from '@/components/Task/SelectTorrent'
@@ -231,7 +240,8 @@
         formLabelWidth: '110px',
         showAdvanced: false,
         form: {},
-        rules: {}
+        rules: {},
+        parsedTasks: []
       }
     },
     computed: {
@@ -268,6 +278,11 @@
         } else {
           document.removeEventListener('keydown', this.handleHotkey)
         }
+      },
+      'form.uris' (val) {
+        if (this.taskType === ADD_TASK_TYPE.URI) {
+          this.updateUriPreview(val)
+        }
       }
     },
     methods: {
@@ -280,6 +295,7 @@
 
         if (isEmpty(this.form.uris)) {
           this.form.uris = content
+          this.updateUriPreview(this.form.uris)
         }
       },
       beforeClose () {
@@ -290,6 +306,9 @@
       handleOpen () {
         this.form = initTaskForm(this.$store.state)
         if (this.taskType === ADD_TASK_TYPE.URI) {
+          if (!isEmpty(this.form.uris)) {
+            this.updateUriPreview(this.form.uris)
+          }
           this.autofillResourceLink()
           setTimeout(() => {
             this.$refs.uri && this.$refs.uri.focus()
@@ -298,9 +317,6 @@
       },
       handleOpened () {
         this.detectThunderResource(this.form.uris)
-      },
-      handleCancel () {
-        this.$store.dispatch('app/hideAddTaskDialog')
       },
       handleClose () {
         this.$store.dispatch('app/hideAddTaskDialog')
@@ -323,6 +339,7 @@
         setImmediate(() => {
           const uris = this.$refs.uri.value
           this.detectThunderResource(uris)
+          this.updateUriPreview(uris)
         })
       },
       detectThunderResource (uris = '') {
@@ -334,9 +351,17 @@
           })
         }
       },
-      handleTorrentChange (torrent, selectedFileIndex) {
+      handleTorrentChange (torrent, selectedFileIndex, files) {
         this.form.torrent = torrent
         this.form.selectFile = selectedFileIndex
+        if (Array.isArray(files) && files.length > 0) {
+          this.parsedTasks = files.map(f => {
+            const size = (typeof f.length === 'number') ? f.length : (typeof f.size === 'number' ? f.size : 0)
+            return { name: f.path || f.name, sizeText: this.bytesToSize(size) }
+          })
+        } else {
+          this.updateTorrentPreview()
+        }
       },
       handleHistoryDirectorySelected (dir) {
         this.form.dir = dir
@@ -348,11 +373,84 @@
       reset () {
         this.showAdvanced = false
         this.form = initTaskForm(this.$store.state)
+        this.parsedTasks = []
+      },
+      enableNameEdit (idx) {
+        if (this.parsedTasks[idx]) {
+          this.$set(this.parsedTasks[idx], 'editing', true)
+        }
+      },
+      disableNameEdit (idx) {
+        if (this.parsedTasks[idx]) {
+          this.$set(this.parsedTasks[idx], 'editing', false)
+        }
+      },
+      async updateUriPreview (uris = '') {
+        const lines = (uris || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+        const items = lines.map(u => {
+          try {
+            const url = decodeURI(u)
+            const lastSlash = url.lastIndexOf('/')
+            const name = lastSlash >= 0 ? url.substring(lastSlash + 1) : url
+            return { name, sizeText: '-', editing: false }
+          } catch (e) {
+            return { name: u, sizeText: '-', editing: false }
+          }
+        })
+        this.parsedTasks = items
+        await this.fetchUriSizes(lines)
+      },
+      async fetchUriSizes (lines = []) {
+        const updates = await Promise.all(lines.map(async (u, idx) => {
+          if (!/^https?:/i.test(u) || u.startsWith('magnet:')) {
+            return { idx, sizeText: '-' }
+          }
+          try {
+            const res = await fetch(u, { method: 'HEAD' })
+            const len = res.headers.get('content-length')
+            if (!len) {
+              return { idx, sizeText: '-' }
+            }
+            const sizeText = this.bytesToSize(parseInt(len, 10))
+            return { idx, sizeText }
+          } catch (_) {
+            return { idx, sizeText: '-' }
+          }
+        }))
+        updates.forEach(({ idx, sizeText }) => {
+          if (this.parsedTasks[idx]) {
+            this.$set(this.parsedTasks[idx], 'sizeText', sizeText)
+          }
+        })
+      },
+      updateTorrentPreview () {
+        // For torrent tasks, try to read files from child component if available
+        const selectComp = this.$refs && this.$refs.selectTorrent
+        let items = []
+        if (selectComp && Array.isArray(selectComp.files) && selectComp.files.length > 0) {
+          items = selectComp.files.map(f => {
+            const size = (typeof f.length === 'number') ? f.length : (typeof f.size === 'number' ? f.size : 0)
+            return { name: f.path || f.name, sizeText: this.bytesToSize(size), editing: false }
+          })
+        }
+        this.parsedTasks = items
+      },
+      bytesToSize (n) {
+        if (!n || n <= 0) return '-'
+        const units = ['B', 'KB', 'MB', 'GB', 'TB']
+        let i = 0
+        let val = n
+        while (val >= 1024 && i < units.length - 1) { val /= 1024; i++ }
+        return `${val.toFixed(1)} ${units[i]}`
       },
       addTask (type, form) {
         let payload = null
         if (type === ADD_TASK_TYPE.URI) {
-          payload = buildUriPayload(form)
+          // 获取自动分类配置
+          const autoCategorizeFiles = this.config.autoCategorizeFiles || false
+          const fileCategories = this.config.fileCategories || null
+
+          payload = buildUriPayload(form, autoCategorizeFiles, fileCategories)
           this.$store.dispatch('task/addUri', payload).catch(err => {
             this.$msg.error(err.message)
           })
@@ -374,6 +472,9 @@
           }
 
           try {
+            if (this.type === 'uri' && this.parsedTasks.length > 0) {
+              this.form.customOuts = this.parsedTasks.map(i => i.name)
+            }
             this.addTask(this.type, this.form)
 
             this.$store.dispatch('app/hideAddTaskDialog')
@@ -397,6 +498,53 @@
 .el-dialog.add-task-dialog {
   max-width: 632px;
   min-width: 380px;
+
+  /* 确保弹窗遮罩层有正确的背景色 */
+  :deep(.el-dialog__wrapper) {
+    background: rgba(0, 0, 0, 0.5);
+  }
+  .parsed-preview {
+    margin-top: 12px;
+    .parsed-preview__header {
+      font-size: 12px;
+      color: $--color-text-secondary;
+      margin-bottom: 6px;
+    }
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 8px;
+    :deep(.el-table) {
+      background: transparent;
+    }
+    :deep(.el-table--border) {
+      border: none !important;
+    }
+    :deep(.el-table::before),
+    :deep(.el-table--border::after),
+    :deep(.el-table__border-left-patch),
+    :deep(.el-table__border-right-patch) {
+      display: none !important;
+    }
+    :deep(.el-table th),
+    :deep(.el-table td),
+    :deep(.el-table__header-wrapper th),
+    :deep(.el-table__body-wrapper td),
+    :deep(.el-table--border .el-table__cell) {
+      border: none !important;
+    }
+    :deep(.el-table th),
+    :deep(.el-table tr),
+    :deep(.el-table td) {
+      border-color: var(--border-color) !important;
+      background-color: transparent !important;
+      color: var(--text-color-primary);
+    }
+    :deep(.el-table__header-wrapper),
+    :deep(.el-table__body-wrapper) {
+      background: transparent;
+    }
+  }
   .task-advanced-options .el-form-item:last-of-type {
     margin-bottom: 0;
   }
@@ -415,9 +563,15 @@
     }
   }
   .el-dialog__footer {
-    padding-top: 20px;
-    background-color: $--add-task-dialog-footer-background;
+    padding-top: 0;
+    background-color: transparent;
     border-radius: 0 0 5px 5px;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    z-index: 1000;
+    box-shadow: none;
   }
   .dialog-footer {
     .chk {

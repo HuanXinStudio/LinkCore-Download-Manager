@@ -1,5 +1,5 @@
 <template>
-  <div class="floating-bar" :class="{ 'hidden-sm-and-down': true }">
+  <div class="floating-bar">
     <div class="floating-bar-inner">
       <button
         class="floating-bar-item"
@@ -44,19 +44,32 @@
       ...mapState('app', {
         stat: state => state.stat
       }),
+      ...mapState('task', {
+        taskList: state => state.taskList
+      }),
       canPauseAllTasks () {
         // 暂停按钮在有活跃任务时可用
         return this.stat.numActive > 0
       },
       canResumeAllTasks () {
-        // 恢复按钮在不是所有任务都是活跃时可用（即有可恢复的任务）
-        const totalTasks = this.stat.numActive + this.stat.numWaiting + this.stat.numStopped
-        return totalTasks > this.stat.numActive
+        // 恢复按钮在有可恢复的任务时可用（等待中或已暂停的任务，但不包括已完成的任务）
+        // 由于全局统计中的numStopped包含了已暂停和已完成的任务，我们需要精确判断
+        // 通过检查任务列表，只计算状态为WAITING或PAUSED的任务数量
+        if (this.taskList.length === 0) {
+          return false
+        }
+
+        const { TASK_STATUS } = require('@shared/constants')
+        const resumableTasks = this.taskList.filter(task => {
+          return task.status === TASK_STATUS.WAITING || task.status === TASK_STATUS.PAUSED
+        })
+
+        return resumableTasks.length > 0
       }
     },
     methods: {
-      handleAddTask (taskType = ADD_TASK_TYPE.URI) {
-        this.$store.dispatch('app/showAddTaskDialog', taskType)
+      handleAddTask () {
+        this.$store.dispatch('app/showAddTaskDialog', ADD_TASK_TYPE.URI)
       },
       handlePauseAllTasks () {
         if (!this.canPauseAllTasks) return
@@ -162,9 +175,4 @@
     }
   }
 
-  @media (max-width: 520px) {
-    .floating-bar {
-      display: none;
-    }
-  }
 </style>

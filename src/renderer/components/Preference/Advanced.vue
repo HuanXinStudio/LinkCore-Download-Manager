@@ -359,6 +359,24 @@
           <el-form-item size="mini">
             <el-col class="form-item-sub" :span="24">
               <el-row :gutter="16" style="margin-bottom: 12px;">
+                <el-col :span="24">
+                  <strong>{{ $t('preferences.engine-select') }}:</strong>
+                  <el-select
+                    v-model="form.engineBinary"
+                    :placeholder="$t('preferences.engine-select-placeholder')"
+                    style="width: 100%; margin-top: 8px;"
+                    @change="onEngineBinaryChange"
+                  >
+                    <el-option
+                      v-for="engine in engineList"
+                      :key="engine"
+                      :label="engine"
+                      :value="engine"
+                    ></el-option>
+                  </el-select>
+                </el-col>
+              </el-row>
+              <el-row :gutter="16" style="margin-bottom: 12px;">
                 <el-col :span="8">
                   <strong>{{ $t('preferences.engine-version') }}:</strong>
                   <div>{{ storeEngineInfo.version || '--' }}</div>
@@ -420,9 +438,10 @@
                   slot="append"
                   v-if="isRenderer"
                   :path="aria2ConfPath"
-                />
-              </el-input>
-            </el-col>
+              />
+            </el-input>
+            <el-button type="primary" size="mini" @click="openAria2ConfEditor">编辑 aria2.conf</el-button>
+          </el-col>
             <el-col class="form-item-sub" :span="24">
               {{ $t('preferences.download-session-path') }}
               <el-input placeholder="" disabled v-model="sessionPath">
@@ -468,6 +487,72 @@
           </el-form-item>
         </div>
       </el-form>
+    <el-dialog
+      custom-class="tab-title-dialog aria2conf-editor-dialog"
+      width="900px"
+      :visible.sync="aria2ConfEditorVisible"
+      :show-close="true"
+      :append-to-body="true"
+    >
+      <div slot="title" class="aria2conf-toolbar">
+        <el-row :gutter="8" style="margin-bottom:8px">
+          <el-col :span="12">
+            <el-input :value="aria2ConfPath" disabled>
+              <mo-show-in-folder slot="append" v-if="isRenderer" :path="aria2ConfPath" />
+            </el-input>
+          </el-col>
+          <el-col :span="12">
+            <el-input v-model="aria2ConfSearch" placeholder="搜索键或值" clearable />
+          </el-col>
+        </el-row>
+        <el-row :gutter="8">
+          <el-col :span="12">
+            <el-select v-model="aria2ConfQuickKey" filterable clearable placeholder="快速添加常用键" style="width:100%">
+              <el-option v-for="k in aria2ConfCommonKeys" :key="k" :label="k" :value="k" />
+            </el-select>
+          </el-col>
+          <el-col :span="12">
+            <el-button type="primary" size="mini" @click="addConfKey">添加键</el-button>
+            <el-button size="mini" @click="addConfItem">新增空条目</el-button>
+            <el-button size="mini" @click="copyAria2ConfText">复制为文本</el-button>
+            <el-button size="mini" @click="pasteFromClipboard">粘贴并导入</el-button>
+          </el-col>
+        </el-row>
+        <el-row :gutter="8" style="margin-bottom:8px">
+          <el-col :span="24">
+            <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 6 }" v-model="aria2ConfRawText" placeholder="粘贴或编辑原始配置文本" />
+            <div style="margin-top:8px">
+              <el-button type="primary" size="mini" @click="importFromText">从文本导入</el-button>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+      <el-row :gutter="8">
+        <el-col :span="24">
+          <el-table :data="aria2ConfFilteredItems" :border="false" :stripe="true" size="mini" style="width: 100%">
+            <el-table-column label="键" width="300">
+              <template slot-scope="scope">
+                <el-input v-model="scope.row.key" size="mini" />
+              </template>
+            </el-table-column>
+            <el-table-column label="值">
+              <template slot-scope="scope">
+                <el-input v-model="scope.row.value" size="mini" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120">
+              <template slot-scope="scope">
+                <el-button type="danger" size="mini" @click="removeConfItem(scope.row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-col>
+      </el-row>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="saveAria2Conf">保存</el-button>
+      </div>
+    </el-dialog>
+
     </el-main>
   </el-container>
 </template>
@@ -523,8 +608,11 @@
       rpcSecret,
       trackerSource,
       useProxy,
-      userAgent
+      userAgent,
+      engineBinary
     } = config
+    // 兼容旧的kebab-case配置键
+    const parsedEngineBinary = engineBinary || config['engine-binary'] || ''
     const result = {
       autoCheckUpdate,
       autoSyncTracker,
@@ -542,7 +630,8 @@
       rpcSecret,
       trackerSource,
       useProxy,
-      userAgent
+      userAgent,
+      engineBinary: parsedEngineBinary
     }
     return result
   }
@@ -568,7 +657,27 @@
         rules: {},
         trackerSourceOptions: TRACKER_SOURCE_OPTIONS,
         trackerSyncing: false,
-        saveTimeout: null
+        saveTimeout: null,
+        engineList: [],
+        // 添加标志，用于跟踪引擎配置是否已初始化
+        engineConfigInitialized: false,
+        aria2ConfEditorVisible: false,
+        aria2ConfOriginalLines: [],
+        aria2ConfItems: [],
+        aria2ConfLoading: false,
+        aria2ConfSearch: '',
+        aria2ConfQuickKey: '',
+        aria2ConfCommonKeys: [
+          'max-concurrent-downloads',
+          'max-connection-per-server',
+          'max-overall-download-limit',
+          'max-overall-upload-limit',
+          'rpc-listen-port',
+          'rpc-secret',
+          'user-agent',
+          'dir'
+        ],
+        aria2ConfRawText: ''
       }
     },
     computed: {
@@ -577,6 +686,10 @@
       ...mapState('app', {
         storeEngineInfo: state => state.engineInfo
       }),
+      configEngineBinary () {
+        const { config = {} } = this.$store.state.preference
+        return config.engineBinary || config['engine-binary']
+      },
       engineInfo () {
         return this.storeEngineInfo
       },
@@ -614,7 +727,16 @@
         aria2ConfPath: state => state.config.aria2ConfPath,
         logPath: state => state.config.logPath,
         sessionPath: state => state.config.sessionPath
-      })
+      }),
+      aria2ConfFilteredItems () {
+        const q = `${this.aria2ConfSearch}`.toLowerCase()
+        if (!q) return this.aria2ConfItems
+        return this.aria2ConfItems.filter(i => {
+          const k = `${i.key}`.toLowerCase()
+          const v = `${i.value}`.toLowerCase()
+          return k.includes(q) || v.includes(q)
+        })
+      }
     },
     watch: {
       form: {
@@ -640,10 +762,67 @@
           secret: val
         })
         navigator.clipboard.writeText(url)
+      },
+      // 监听引擎列表变化，确保当前选择的引擎有效
+      engineList (newList) {
+        if (newList.length > 0) {
+          this.initEngineSelection(newList)
+        }
+      },
+      // 监听store中的engineBinary变化，确保表单与最新配置同步
+      configEngineBinary: {
+        handler (newValue) {
+          if (newValue && this.engineList.length > 0) {
+            this.form.engineBinary = newValue
+            this.formOriginal.engineBinary = newValue
+          }
+        },
+        immediate: true
       }
+    },
+    async created () {
+      // 获取引擎列表
+      await this.fetchEngineList()
+    },
+    async mounted () {
+      // 组件挂载后再次获取引擎列表，确保最新
+      await this.fetchEngineList()
     },
     methods: {
       ...mapActions('app', ['updateCheckingUpdate']),
+      // 初始化引擎选择
+      initEngineSelection (engineList) {
+        // 1. 从store获取最新的引擎配置
+        const storeConfig = this.$store.state.preference.config
+        const storeEngineBinary = storeConfig.engineBinary || storeConfig['engine-binary']
+
+        // 2. 检查store中的引擎配置是否有效
+        if (storeEngineBinary && engineList.includes(storeEngineBinary)) {
+          // 如果有效，使用store中的配置
+          this.form.engineBinary = storeEngineBinary
+          this.formOriginal.engineBinary = storeEngineBinary
+        } else if (this.form.engineBinary && engineList.includes(this.form.engineBinary)) {
+          // 3. 检查当前表单中的引擎配置是否有效
+          // 如果有效，保持当前配置
+          this.formOriginal.engineBinary = this.form.engineBinary
+        } else if (engineList.length > 0) {
+          // 4. 否则，使用第一个可用引擎
+          this.form.engineBinary = engineList[0]
+          this.formOriginal.engineBinary = engineList[0]
+          // 保存新的引擎配置
+          this.autoSaveForm()
+        }
+      },
+      // 获取引擎列表方法
+      async fetchEngineList () {
+        try {
+          const engines = await this.$electron.ipcRenderer.invoke('get-engine-list')
+          this.engineList = engines
+        } catch (error) {
+          console.error('Failed to get engine list:', error)
+          this.engineList = []
+        }
+      },
       autoSaveForm () {
         // Debounce auto-save to avoid too many requests
         if (this.saveTimeout) {
@@ -655,6 +834,10 @@
             this.submitForm('advancedForm')
           }
         }, 500)
+      },
+      onEngineBinaryChange () {
+        // 引擎选择变化时，直接触发保存，不更新formOriginal
+        this.autoSaveForm()
       },
       handleLocaleChange (locale) {
         const lng = getLanguage(locale)
@@ -838,6 +1021,124 @@
           }
         })
       },
+      openAria2ConfEditor () {
+        this.aria2ConfEditorVisible = true
+        this.loadAria2Conf()
+      },
+      async loadAria2Conf () {
+        this.aria2ConfLoading = true
+        try {
+          const res = await this.$electron.ipcRenderer.invoke('aria2-conf:read')
+          const text = res && res.content ? res.content : ''
+          const lines = `${text}`.split(/\r?\n/)
+          this.aria2ConfOriginalLines = lines
+          const items = []
+          lines.forEach((line, idx) => {
+            const m = /^\s*([A-Za-z0-9_.-]+)\s*=\s*(.*)\s*$/.exec(line)
+            if (m) {
+              items.push({ key: m[1], value: m[2], index: idx })
+            }
+          })
+          this.aria2ConfItems = items
+        } catch (e) {
+          this.$msg.error(this.$t('preferences.save-fail-message'))
+        } finally {
+          this.aria2ConfLoading = false
+        }
+      },
+      addConfItem () {
+        this.aria2ConfItems = [...this.aria2ConfItems, { key: '', value: '', index: -1 }]
+      },
+      removeConfItem (row) {
+        const idx = this.aria2ConfItems.indexOf(row)
+        if (idx !== -1) {
+          this.aria2ConfItems.splice(idx, 1)
+        }
+      },
+      async saveAria2Conf () {
+        const original = [...this.aria2ConfOriginalLines]
+        const kvRegex = /^\s*([A-Za-z0-9_.-]+)\s*=\s*(.*)\s*$/
+        const kvMap = {}
+        original.forEach(line => {
+          const m = kvRegex.exec(line)
+          if (m) { kvMap[m[1]] = m[2] }
+        })
+        this.aria2ConfItems.forEach(item => {
+          const k = `${item.key}`.trim()
+          if (!k) return
+          const v = `${item.value}`.trim()
+          kvMap[k] = v
+        })
+        const rebuilt = original.map(line => {
+          const m = kvRegex.exec(line)
+          if (!m) return line
+          const k = m[1]
+          const v = kvMap[k]
+          return typeof v !== 'undefined' ? `${k}=${v}` : line
+        })
+        // 追加原文件中未包含但编辑器新增的键
+        const existingKeys = new Set(Object.keys(kvMap))
+        original.forEach(line => {
+          const m = kvRegex.exec(line)
+          if (m) existingKeys.delete(m[1])
+        })
+        existingKeys.forEach(k => {
+          rebuilt.push(`${k}=${kvMap[k]}`)
+        })
+        const content = rebuilt.join('\n')
+        const res = await this.$electron.ipcRenderer.invoke('aria2-conf:write', { content })
+        if (res && res.success) {
+          this.$msg.success(`${this.$t('preferences.save-success-message')} \n${res.path}`)
+          // 立即重新加载以验证写入成功，不关闭编辑器
+          await this.loadAria2Conf()
+        } else {
+          const msg = (res && res.error) ? res.error : this.$t('preferences.save-fail-message')
+          this.$msg.error(msg)
+        }
+      },
+      addConfKey () {
+        const key = this.aria2ConfQuickKey
+        if (!key) return
+        const exists = this.aria2ConfItems.find(item => item.key === key)
+        if (!exists) {
+          this.aria2ConfItems = [...this.aria2ConfItems, { key, value: '', index: -1 }]
+        }
+      },
+      copyAria2ConfText () {
+        const text = this.aria2ConfItems
+          .filter(i => i.key)
+          .map(i => `${i.key}=${i.value}`)
+          .join('\n')
+        if (text) {
+          navigator.clipboard.writeText(text)
+        }
+      },
+      importFromText () {
+        const raw = `${this.aria2ConfRawText}`
+        const lines = raw.split(/\r?\n/)
+        lines.forEach(line => {
+          const m = /^\s*([A-Za-z0-9_.-]+)\s*=\s*(.*)\s*$/.exec(line)
+          if (m) {
+            const key = m[1]
+            const value = m[2]
+            const idx = this.aria2ConfItems.findIndex(i => i.key === key)
+            if (idx >= 0) {
+              this.aria2ConfItems.splice(idx, 1, { ...this.aria2ConfItems[idx], value })
+            } else {
+              this.aria2ConfItems.push({ key, value, index: -1 })
+            }
+          }
+        })
+      },
+      async pasteFromClipboard () {
+        try {
+          const text = await navigator.clipboard.readText()
+          this.aria2ConfRawText = text
+          this.importFromText()
+        } catch (e) {
+          this.$msg.error(this.$t('preferences.save-fail-message'))
+        }
+      },
       syncFormConfig () {
         this.$store.dispatch('preference/fetchPreference')
           .then((config) => {
@@ -853,8 +1154,13 @@
           }
 
           const data = {
-            ...diffConfig(this.formOriginal, this.form),
-            ...changedConfig.basic
+            ...diffConfig(this.formOriginal, this.form)
+          }
+
+          // 显式处理engineBinary字段，转换为kebab-case
+          if ('engineBinary' in data) {
+            data['engine-binary'] = data.engineBinary
+            delete data.engineBinary
           }
 
           const {
@@ -880,29 +1186,42 @@
 
           console.log('[Motrix] preference changed data:', data)
 
+          // 检查是否需要重启
+          const needRelaunch = this.isRenderer && (
+            ('engine-binary' in data && data['engine-binary'] !== this.formOriginal.engineBinary) ||
+            checkIsNeedRestart(data)
+          )
+
           this.$store.dispatch('preference/save', data)
             .then(() => {
               this.$store.dispatch('app/fetchEngineOptions')
-              this.syncFormConfig()
               // Don't show success message for auto-save to avoid constant notifications
+
+              changedConfig.basic = {}
+              changedConfig.advanced = {}
+
+              if (this.isRenderer) {
+                if ('autoHideWindow' in data) {
+                  this.$electron.ipcRenderer.send('command',
+                                                  'application:auto-hide-window', autoHideWindow)
+                }
+
+                // 只有在配置保存成功后才发送重启命令
+                if (needRelaunch) {
+                  this.$electron.ipcRenderer.send('command', 'application:relaunch')
+                  // 发送重启命令后立即返回，不再执行后续的syncFormConfig()
+                  return
+                }
+
+                // 不需要重启时，才同步表单配置
+                this.syncFormConfig()
+              }
             })
             .catch((e) => {
               this.$msg.error(this.$t('preferences.save-fail-message'))
+              changedConfig.basic = {}
+              changedConfig.advanced = {}
             })
-
-          changedConfig.basic = {}
-          changedConfig.advanced = {}
-
-          if (this.isRenderer) {
-            if ('autoHideWindow' in data) {
-              this.$electron.ipcRenderer.send('command',
-                                              'application:auto-hide-window', autoHideWindow)
-            }
-
-            if (checkIsNeedRestart(data)) {
-              this.$electron.ipcRenderer.send('command', 'application:relaunch')
-            }
-          }
         })
       }
     },
@@ -945,6 +1264,62 @@
     cursor: not-allowed;
     pointer-events: none;
     text-decoration: none;
+  }
+}
+
+.el-dialog.aria2conf-editor-dialog {
+  :deep(.el-dialog__wrapper) {
+    background: rgba(0, 0, 0, 0.5);
+  }
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  .el-dialog__header {
+    padding: 10px 20px;
+    border-bottom: none;
+  }
+  .el-dialog__body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding-bottom: 10px;
+  }
+  .el-dialog__footer {
+    border-top: none;
+    background: transparent;
+  }
+  .dialog-footer {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    left: auto;
+    padding: 0;
+    background: transparent;
+  }
+  .aria2conf-toolbar {
+    background: var(--panel-background);
+    padding: 8px 0 4px;
+  }
+  :deep(.el-table__header-wrapper) {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--panel-background);
+  }
+  :deep(.el-table--border) {
+    border: none !important;
+  }
+  :deep(.el-table::before),
+  :deep(.el-table--border::after),
+  :deep(.el-table__border-left-patch),
+  :deep(.el-table__border-right-patch) {
+    display: none !important;
+  }
+  :deep(.el-table th),
+  :deep(.el-table td),
+  :deep(.el-table__header-wrapper th),
+  :deep(.el-table__body-wrapper td),
+  :deep(.el-table--border .el-table__cell) {
+    border: none !important;
   }
 }
 </style>

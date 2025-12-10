@@ -5,6 +5,7 @@ const userKeys = [
   'cookie',
   'enable-upnp',
   'engine-bin-path',
+  'engine-binary',
   'engine-max-connection-per-server',
   'favorite-directories',
   'hide-app-menu',
@@ -26,7 +27,10 @@ const userKeys = [
   'task-notification',
   'theme',
   'tracker-source',
-  'tray-speedometer'
+  'tray-speedometer',
+  'downloading-file-suffix',
+  'auto-categorize-files',
+  'file-categories'
 ]
 
 const systemKeys = [

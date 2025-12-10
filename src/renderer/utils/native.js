@@ -1,4 +1,4 @@
-import { access, constants } from 'node:fs'
+import { access, constants, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { shell, nativeTheme } from '@electron/remote'
 import { Message } from 'element-ui'
@@ -67,7 +67,7 @@ export const getTaskFullPath = (task) => {
   return result
 }
 
-export const moveTaskFilesToTrash = (task) => {
+export const moveTaskFilesToTrash = async (task, downloadingFileSuffix = '') => {
   /**
    * For magnet link tasks, there is bittorrent, but there is no bittorrent.info.
    * The path is not a complete path before it becomes a BT task.
@@ -84,40 +84,56 @@ export const moveTaskFilesToTrash = (task) => {
     throw new Error('task.file-path-error')
   }
 
-  let deleteResult1 = true
-  access(path, constants.F_OK, async (err) => {
-    console.log(`[Motrix] ${path} ${err ? 'does not exist' : 'exists'}`)
-    if (!err) {
-      deleteResult1 = await shell.trashItem(path)
+  // 尝试删除原始路径文件
+  if (existsSync(path)) {
+    console.log(`[Motrix] ${path} exists, deleting...`)
+    await shell.trashItem(path)
+  } else if (downloadingFileSuffix) {
+    // 如果原始路径文件不存在，尝试删除带有自定义后缀的文件
+    const suffixedPath = `${path}${downloadingFileSuffix}`
+    if (existsSync(suffixedPath)) {
+      console.log(`[Motrix] ${suffixedPath} exists, deleting...`)
+      await shell.trashItem(suffixedPath)
     }
-  })
+  }
 
   // There is no configuration file for the completed task.
   if (status === TASK_STATUS.COMPLETE) {
-    return deleteResult1
+    return true
   }
 
-  let deleteResult2 = true
   const extraFilePath = `${path}.aria2`
-  access(extraFilePath, constants.F_OK, async (err) => {
-    console.log(`[Motrix] ${extraFilePath} ${err ? 'does not exist' : 'exists'}`)
-    if (!err) {
-      deleteResult2 = await shell.trashItem(extraFilePath)
-    }
-  })
+  // 等待一段时间，确保.aria2文件有足够的时间被创建
+  // 这是解决任务刚开始时.aria2文件未创建的问题的关键
+  await new Promise(resolve => setTimeout(resolve, 100))
 
-  return deleteResult1 && deleteResult2
+  // 检查.aria2文件是否存在，如果存在则删除
+  if (existsSync(extraFilePath)) {
+    console.log(`[Motrix] ${extraFilePath} exists, deleting...`)
+    await shell.trashItem(extraFilePath)
+  } else {
+    // 如果.aria2文件不存在，尝试再次检查，因为可能存在延迟
+    await new Promise(resolve => setTimeout(resolve, 100))
+    if (existsSync(extraFilePath)) {
+      console.log(`[Motrix] ${extraFilePath} exists after delay, deleting...`)
+      await shell.trashItem(extraFilePath)
+    }
+  }
+
+  // 总是返回true，因为文件删除失败不应该影响任务删除流程
+  // 即使文件删除失败，任务也应该被从列表中移除
+  return true
 }
 
 export const getSystemTheme = () => {
   return nativeTheme.shouldUseDarkColors ? APP_THEME.DARK : APP_THEME.LIGHT
 }
 
-export const delayDeleteTaskFiles = (task, delay) => {
+export const delayDeleteTaskFiles = (task, delay, downloadingFileSuffix = '') => {
   return new Promise((resolve, reject) => {
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        const result = moveTaskFilesToTrash(task)
+        const result = await moveTaskFilesToTrash(task, downloadingFileSuffix)
         resolve(result)
       } catch (err) {
         reject(err.message)

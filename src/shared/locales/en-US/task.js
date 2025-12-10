@@ -91,6 +91,7 @@ export default {
   'no-task': 'There are no current tasks',
   'copy-link': 'Copy Link',
   'copy-link-success': 'Successfully copied link',
+  'parsed-tasks': 'Parsed Tasks',
   'remove-record': 'Remove Task Record',
   'remove-record-confirm': 'Are you sure you want to remove download record for "{{taskName}}"?',
   'remove-record-label': 'Delete with Files',

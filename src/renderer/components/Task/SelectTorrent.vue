@@ -112,7 +112,7 @@
           getAsBase64(file.raw, (torrent) => {
             this.name = file.name
             this.currentTorrent = torrent
-            this.$emit('change', torrent, SELECTED_ALL_FILES)
+            this.$emit('change', torrent, SELECTED_ALL_FILES, this.files)
           })
         })
       }
@@ -139,7 +139,7 @@
       },
       handleSelectionChange (val) {
         const { currentTorrent } = this
-        this.$emit('change', currentTorrent, val)
+        this.$emit('change', currentTorrent, val, this.files)
       }
     }
   }

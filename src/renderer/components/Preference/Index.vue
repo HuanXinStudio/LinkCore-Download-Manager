@@ -135,15 +135,43 @@
   border-radius: 4px 4px 0 0 !important;
   border-bottom: none !important;
   margin-bottom: -1px !important;
+  position: relative;
+  z-index: 2;
+
+  /* Light theme styles */
+  .el-input__inner {
+    background: $--input-background-color !important;
+    border-color: $--border-color-base !important;
+    color: $--color-text-primary !important;
+  }
+
+  .el-input__inner:focus {
+    border-color: $--color-primary !important;
+  }
+}
+
+/* Dark theme styles for better integration */
+.theme-dark .language-select {
+  .el-input__inner {
+    background: $--dk-panel-background !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: $--dk-panel-title-color !important;
+  }
+
+  .el-input__inner:focus {
+    border-color: $--color-primary !important;
+  }
 }
 
 .undo-change-btn {
   width: 100%;
   border-radius: 0 0 4px 4px !important;
-  border-top: none !important;
   margin-top: -2px !important;
   height: 32px;
   line-height: 30px;
   padding: 0 12px;
+  background-color: $--button-danger-background-color !important;
+  border-color: $--button-danger-border-color !important;
+  color: $--button-danger-font-color !important;
 }
 </style>

@@ -280,7 +280,7 @@
 .version-item {
   cursor: pointer;
   transition: all 0.3s ease;
-  border: 1px solid #dcdfe6;
+  border: 1px solid #000;
   border-radius: 12px;
   padding: 8px 12px;
   margin-top: 10px;
@@ -345,6 +345,40 @@
     font-family: monospace;
     display: block;
     text-align: center;
+  }
+
+  /* 黑夜模式适配 */
+  .theme-dark & {
+    border-color: #fff;
+    color: #fff;
+  }
+
+  .theme-dark &:hover {
+    border-color: #c6e2ff;
+  }
+
+  .theme-dark &.update-available {
+    border-color: #a5d6a7;
+  }
+
+  .theme-dark &.update-available:hover {
+    border-color: #a5d6a7;
+  }
+
+  .theme-dark &.is-checking {
+    border-color: #409eff;
+  }
+
+  .theme-dark &.is-checking:hover {
+    border-color: #409eff;
+  }
+
+  .theme-dark &.downloading {
+    border-color: #f0c78a;
+  }
+
+  .theme-dark &.downloading:hover {
+    border-color: #f0c78a;
   }
 }
 

@@ -26,7 +26,23 @@ const getters = {
 
 const mutations = {
   UPDATE_PREFERENCE_DATA (state, config) {
-    state.config = { ...state.config, ...config }
+    // 创建新的配置对象
+    const newConfig = { ...state.config }
+
+    // 处理config中的每个属性
+    Object.keys(config).forEach(key => {
+      const value = config[key]
+
+      if (value === undefined) {
+        // 如果值为undefined，表示该属性应该被删除
+        delete newConfig[key]
+      } else {
+        // 否则更新属性值
+        newConfig[key] = value
+      }
+    })
+
+    state.config = newConfig
   },
   UPDATE_UPDATE_AVAILABLE (state, updateAvailable) {
     state.updateAvailable = updateAvailable
