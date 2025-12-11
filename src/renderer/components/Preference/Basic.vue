@@ -99,6 +99,32 @@
           </div>
         </div>
 
+        <!-- 快捷键卡片 -->
+        <div class="preference-card">
+          <h3 class="card-title">{{ $t('preferences.shortcuts') }}</h3>
+          <el-form-item size="mini">
+            <el-row :gutter="8" style="margin-bottom: 8px;">
+              <el-col :span="12">{{ $t('preferences.shortcut-command') }}</el-col>
+              <el-col :span="12">{{ $t('preferences.shortcut-keystroke') }}</el-col>
+            </el-row>
+            <el-row v-for="command in getShortcutCommands()" :key="command" :gutter="8" style="margin-bottom: 8px;">
+              <el-col :span="12">
+                <el-input :value="getCommandLabel(command)" readonly />
+              </el-col>
+              <el-col :span="12">
+                <el-input
+                  :value="formatKeystrokeForDisplay(getKeystrokeByCommand(command))"
+                  @keydown.native="setCommandKeystroke(command, normalizeKeystroke($event))"
+                  :placeholder="$t('preferences.shortcut-placeholder')"
+                />
+              </el-col>
+            </el-row>
+            <el-button type="warning" size="mini" @click="form.customKeymap = {}; autoSaveForm()">
+              {{ $t('preferences.shortcut-reset-default') }}
+            </el-button>
+          </el-form-item>
+        </div>
+
         <!-- 启动设置卡片 -->
         <div class="preference-card">
           <h3 class="card-title">{{ $t('preferences.startup') }}</h3>
@@ -450,6 +476,7 @@
     ENGINE_RPC_PORT
   } from '@shared/constants'
   import { reduceTrackerString } from '@shared/utils/tracker'
+  import keymap from '@shared/keymap'
 
   const initForm = (config) => {
     const {
@@ -483,7 +510,8 @@
       traySpeedometer,
       autoCategorizeFiles,
       fileCategories,
-      setFileMtimeOnComplete
+      setFileMtimeOnComplete,
+      customKeymap
     } = config
 
     const btAutoDownloadContent = followTorrent &&
@@ -531,7 +559,8 @@
         archives: { name: 'archive-files', extensions: ['zip', 'rar', '7z', 'tar', 'gz'] },
         programs: { name: 'program-files', extensions: ['exe', 'msi', 'dmg', 'pkg', 'deb', 'rpm'] },
         others: { name: 'other-files', extensions: [] }
-      }
+      },
+      customKeymap: customKeymap || {}
     }
     return result
   }
@@ -719,6 +748,109 @@
       }
     },
     methods: {
+      getShortcutCommands () {
+        const baseCommands = Object.values(keymap)
+        const customCommands = Object.values(this.form.customKeymap || {})
+        const set = new Set([...baseCommands, ...customCommands])
+        return Array.from(set)
+      },
+      getKeystrokeByCommand (command) {
+        const custom = this.form.customKeymap || {}
+        const customEntries = Object.entries(custom)
+        for (const [ks, cmd] of customEntries) {
+          if (cmd === command) return ks
+        }
+        const baseEntries = Object.entries(keymap)
+        for (const [ks, cmd] of baseEntries) {
+          if (cmd === command) return ks
+        }
+        return ''
+      },
+      normalizeKeystroke (event) {
+        event.preventDefault()
+        const parts = []
+        if (event.ctrlKey || event.metaKey) parts.push('cmdctrl')
+        if (event.shiftKey) parts.push('shift')
+        if (event.altKey) parts.push('alt')
+        let key = event.key || ''
+        key = key.toLowerCase()
+        if (key === 'control' || key === 'meta' || key === 'shift' || key === 'alt') {
+          return ''
+        }
+        if (key === 'arrowup') key = 'up'
+        if (key === 'arrowdown') key = 'down'
+        if (key === 'arrowleft') key = 'left'
+        if (key === 'arrowright') key = 'right'
+        if (key === 'escape') key = 'esc'
+        const result = [...parts, key].filter(Boolean).join('-')
+        return result
+      },
+      formatKeystrokeForDisplay (keystroke) {
+        if (!keystroke) return ''
+        const parts = keystroke.split('-').filter(Boolean)
+        if (parts.length === 0) return ''
+        const modifiers = []
+        let key = ''
+        parts.forEach(p => {
+          switch (p) {
+          case 'cmdctrl':
+            modifiers.push('Ctrl/Cmd')
+            break
+          case 'ctrl':
+            modifiers.push('Ctrl')
+            break
+          case 'cmd':
+            modifiers.push('Cmd')
+            break
+          case 'shift':
+            modifiers.push('Shift')
+            break
+          case 'alt':
+            modifiers.push('Alt')
+            break
+          default:
+            key = p
+            break
+          }
+        })
+        const specials = {
+          esc: 'Esc',
+          up: 'Up',
+          down: 'Down',
+          left: 'Left',
+          right: 'Right'
+        }
+        const displayKey = specials[key] || (key.length === 1 ? key.toUpperCase() : key)
+        return [...modifiers, displayKey].filter(Boolean).join(' + ')
+      },
+      setCommandKeystroke (command, keystroke) {
+        const custom = { ...(this.form.customKeymap || {}) }
+        Object.keys(custom).forEach(k => {
+          if (custom[k] === command) {
+            delete custom[k]
+          }
+        })
+        if (keystroke) {
+          custom[keystroke] = command
+        }
+        this.form.customKeymap = custom
+        this.autoSaveForm()
+      },
+      getCommandLabel (command) {
+        const map = {
+          'application:quit': 'app.quit',
+          'application:new-task': 'task.new-task',
+          'application:new-bt-task': 'task.new-bt-task',
+          'application:open-file': 'task.open-file',
+          'application:task-list': 'app.task-list',
+          'application:preferences': 'app.preferences',
+          'application:pause-all-task': 'task.pause-all-task',
+          'application:resume-all-task': 'task.resume-all-task',
+          'application:select-all-task': 'task.select-all-task'
+        }
+        const key = map[command]
+        return key ? this.$t(key) : command
+      },
       autoSaveForm () {
         // Debounce auto-save to avoid too many requests
         if (this.saveTimeout) {

@@ -28,10 +28,24 @@ export default class MenuManager extends EventEmitter {
     this.template = template.menu
   }
 
+  getMergedKeymap () {
+    const base = keymap
+    let custom = {}
+    try {
+      if (global.application && global.application.configManager) {
+        custom = global.application.configManager.getUserConfig('custom-keymap') || {}
+      }
+    } catch (e) {
+      custom = {}
+    }
+    return { ...base, ...custom }
+  }
+
   build () {
+    const mergedKeymap = this.getMergedKeymap()
     const keystrokesByCommand = {}
-    for (const item in this.keymap) {
-      keystrokesByCommand[this.keymap[item]] = item
+    for (const item in mergedKeymap) {
+      keystrokesByCommand[mergedKeymap[item]] = item
     }
 
     // Deepclone the menu template to refresh menu

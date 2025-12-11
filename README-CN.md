@@ -1,4 +1,4 @@
-<p align="right"><a href="./README.md">English</a></p>
+<p align="right"><a href="./README.md">English</a>
 
 # LinkCore Download Manager（联芯下载管理器）
 
@@ -25,11 +25,8 @@
 ## 📖 项目简介
 
 LinkCore Download Manager（联芯下载管理器）是一款简洁易用的跨平台下载器，采用现代 Web 技术构建。开箱即用的直观界面、清晰的任务流程与少量必要的设置，让下载管理变得更简单；同时支持常见下载协议，覆盖日常使用场景。
-
-在保留 <a href="https://github.com/agalwood/Motrix">Motrix</a> 优秀架构的基础上，我们聚焦“好用、稳定、易上手”，在性能优化、界面体验与实用功能上持续改进，力求提供轻量而强大的下载体验。
-
+***
 同时，联芯下载管理器也具备专业下载器级的能力：支持 BitTorrent/磁力、UPnP/NAT-PMP 端口映射、Tracker 自动更新、任务优先值与批量管理、快速切换下载引擎、以及高级选项预设等，满足进阶与重度下载场景。
-
 ## ✨ 核心功能
 
 ### 🚀 性能与可靠性
@@ -224,10 +221,6 @@ LinkCore-Download-Manager/
 - 为新功能添加测试
 - 按需更新文档
 
-## 📄 许可证
-
-联芯下载管理器基于 [MIT License](LICENSE) 开源。
-
 ## 🙏 致谢
 
 - **原始项目**：[Motrix](https://github.com/agalwood/Motrix) by Dr_rOot
@@ -241,9 +234,6 @@ LinkCore-Download-Manager/
 
 - 在GitHub上 [提交issue](https://github.com/HuanXinStudio/LinkCore-Download-Manager/issues)
 - 加入我们的社区进行讨论和获取支持
+## 📄 许可证
 
----
-
-<p align="center">
-  由 HuanXinStudio 打造
-</p>
+联芯下载管理器基于 [MIT License](LICENSE) 开源。

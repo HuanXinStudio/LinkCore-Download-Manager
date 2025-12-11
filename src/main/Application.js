@@ -233,6 +233,7 @@ export default class Application extends EventEmitter {
     })
 
     this.watchTraySpeedometerEnabledChange()
+    this.watchCustomKeymapChange()
 
     this.trayManager.on('mouse-down', ({ focused }) => {
       this.sendCommandToAll('application:update-tray-focused', { focused })
@@ -257,6 +258,15 @@ export default class Application extends EventEmitter {
     this.configListeners[key] = userConfig.onDidChange(key, async (newValue, oldValue) => {
       logger.info(`[Motrix] detected ${key} value change event:`, newValue, oldValue)
       this.trayManager.handleSpeedometerEnableChange(newValue)
+    })
+  }
+
+  watchCustomKeymapChange () {
+    const { userConfig } = this.configManager
+    const key = 'custom-keymap'
+    this.configListeners[key] = userConfig.onDidChange(key, async (newValue, oldValue) => {
+      logger.info(`[Motrix] detected ${key} value change event:`, newValue, oldValue)
+      this.menuManager.setup(this.locale)
     })
   }
 

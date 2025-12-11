@@ -162,5 +162,10 @@ export default {
   'file-categories-name-required': 'Folder name cannot be empty',
   'file-categories-ext-format-error': 'File extension cannot contain dot (.)',
   'cancel': 'Cancel',
-  'save': 'Save'
+  'save': 'Save',
+  'shortcuts': 'Shortcuts',
+  'shortcut-command': 'Command',
+  'shortcut-keystroke': 'Keystroke',
+  'shortcut-placeholder': 'Press new shortcut here',
+  'shortcut-reset-default': 'Reset to defaults'
 }

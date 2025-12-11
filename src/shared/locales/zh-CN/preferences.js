@@ -164,5 +164,10 @@ export default {
   'file-categories-name-required': '文件夹名称不能为空',
   'file-categories-ext-format-error': '文件扩展名不能包含点（.）',
   'cancel': '取消',
-  'save': '保存'
+  'save': '保存',
+  'shortcuts': '快捷键',
+  'shortcut-command': '命令',
+  'shortcut-keystroke': '按键组合',
+  'shortcut-placeholder': '在此按下新的快捷键',
+  'shortcut-reset-default': '恢复默认快捷键'
 }

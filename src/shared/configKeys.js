@@ -36,7 +36,8 @@ const userKeys = [
   'file-categories',
   'set-file-mtime-on-complete',
   'advanced-option-presets',
-  'task-priorities'
+  'task-priorities',
+  'custom-keymap'
 ]
 
 const systemKeys = [
