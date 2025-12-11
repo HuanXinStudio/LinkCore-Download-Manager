@@ -6,30 +6,6 @@
   <img src="./screenshots/屏幕截图 2025-12-09 052141.png" width="1100" alt="LinkCore Download Manager Logo" />
 </p>
 
-## Table of Contents
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-  - [Performance & Reliability](#-performance--reliability)
-  - [Protocol Support](#-protocol-support)
-  - [User Experience](#-user-experience)
-  - [Advanced Features](#-advanced-features)
-  - [Unique Features](#-unique-features)
-- [Platforms](#-platforms)
-- [Installation](#-installation)
-- [Screenshots](#-screenshots)
-- [Quick Start](#-quick-start)
-  - [Basic Usage](#-basic-usage)
-  - [Keyboard Shortcuts](#-keyboard-shortcuts)
-- [Tips](#-tips)
-- [Engine Version & Connections](#-engine-version--connections)
-- [Development](#-development)
-  - [Prerequisites](#-prerequisites)
-  - [Setup](#-setup)
-  - [Project Structure](#-project-structure)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Credits](#-credits)
-- [Support](#-support)
 <p align="center">
   <a href="https://github.com/HuanXinStudio/LinkCore-Download-Manager/releases">
     <img src="https://img.shields.io/github/v/release/HuanXinStudio/LinkCore-Download-Manager.svg" alt="GitHub release" />
