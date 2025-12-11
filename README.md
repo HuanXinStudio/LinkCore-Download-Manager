@@ -25,9 +25,9 @@
 
 ## 📖 Overview
 
-LinkCore Download Manager is a powerful, cross-platform download manager built with modern web technologies. It provides a clean, intuitive interface while supporting a wide range of download protocols, making it an ideal choice for all your downloading needs.
+LinkCore Download Manager is a simple, easy-to-use, cross-platform downloader built with modern web technologies. A clean, intuitive UI, straightforward task flow, and minimal required settings make downloads effortless; support for common protocols covers everyday scenarios.
 
-Originally forked from <a href="https://github.com/agalwood/Motrix">Motrix</a>, LinkCore has been enhanced with improved performance, a refined user interface, and additional features to deliver an exceptional downloading experience.
+Built on the solid foundation of <a href="https://github.com/agalwood/Motrix">Motrix</a>, we focus on being easy to use, stable, and approachable — continuously improving performance, UX, and practical features to deliver a lightweight yet powerful downloading experience.
 
 ## ✨ Key Features
 
