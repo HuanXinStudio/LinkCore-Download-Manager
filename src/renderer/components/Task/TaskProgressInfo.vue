@@ -120,6 +120,14 @@
         const dhtEnabled = Number(cfg['dht-listen-port'] || cfg.dhtListenPort || 0) > 0
         const trackersConfigured = `${cfg['bt-tracker'] || cfg.btTracker || ''}`.trim().length > 0
         const elapsedMin = Math.floor(elapsedSec / 60)
+        
+        // 检查磁力解析是否完成（元数据已准备好）
+        const metadataReady = this.task.totalLength > 0 && this.task.files && this.task.files.length > 0
+        if (metadataReady) {
+          // 元数据已准备好，但下载速度为0，可能是暂停状态
+          return ''
+        }
+        
         if (phase === 'no_trackers' || (peerCount === 0 && trackerCount === 0)) {
           const base = trackersConfigured ? this.$t('task.magnet-status-contacting-trackers', { trackerCount }) : this.$t('task.magnet-status-no-trackers')
           const suggest = this.$t('task.magnet-suggest-add-trackers')
@@ -222,3 +230,4 @@
   margin-top: 4px;
 }
 </style>
+
