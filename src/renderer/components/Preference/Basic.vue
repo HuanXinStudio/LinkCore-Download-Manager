@@ -847,33 +847,85 @@
         return [...modifiers, displayKey].filter(Boolean).join(' + ')
       },
       setCommandKeystroke (command, keystroke) {
-        const reserved = new Set(['cmdctrl-a', 'cmdctrl-m'])
-        if (keystroke && reserved.has(keystroke)) {
-          this.$msg.error(this.$t('preferences.shortcut-reserved') || '该快捷键与系统常用快捷键冲突，请更换')
+        if (!keystroke) {
+          // 如果没有按键，只是清除当前命令的快捷键
+          const custom = { ...(this.form.customKeymap || {}) }
+          Object.keys(custom).forEach(k => {
+            if (custom[k] === command) {
+              delete custom[k]
+            }
+          })
+          this.form.customKeymap = custom
+          this.autoSaveForm()
           return
         }
 
-        const baseEntries = Object.entries(keymap)
-        const baseUsed = baseEntries.find(([ks, cmd]) => ks === keystroke && cmd !== command)
+        // 检查快捷键是否已被其他命令使用
+        const existingCommand = this.getCommandByKeystroke(keystroke)
+        if (existingCommand && existingCommand !== command) {
+          // 显示错误通知，不允许设置重复快捷键
+          const existingCommandLabel = this.getCommandLabel(existingCommand)
+          const keystrokeDisplay = this.formatKeystrokeForDisplay(keystroke)
+
+          // 使用多语言本地化提示
+          const message = this.$t('preferences.shortcut-duplicate-message', {
+            keystroke: keystrokeDisplay,
+            command: existingCommandLabel
+          })
+          this.$message({
+            type: 'warning',
+            message: message,
+            duration: 4000,
+            dangerouslyUseHTMLString: true,
+            showClose: true
+          })
+          return
+        }
+
+        // 没有冲突，直接应用
         const custom = { ...(this.form.customKeymap || {}) }
-        const customUsed = Object.entries(custom).find(([ks, cmd]) => ks === keystroke && cmd !== command)
-        if (keystroke && (baseUsed || customUsed)) {
-          this.$msg.error(this.$t('preferences.shortcut-duplicated') || '该快捷键已被其他命令占用')
-          return
-        }
 
-        // 允许为同一命令更新快捷键（移除旧映射）
-        const next = { ...custom }
-        Object.keys(next).forEach(k => {
-          if (next[k] === command) {
-            delete next[k]
+        // 删除当前命令的旧快捷键
+        Object.keys(custom).forEach(k => {
+          if (custom[k] === command) {
+            delete custom[k]
           }
         })
-        if (keystroke) {
-          next[keystroke] = command
-        }
-        this.form.customKeymap = next
+
+        // 设置新的快捷键
+        custom[keystroke] = command
+
+        this.form.customKeymap = custom
         this.autoSaveForm()
+      },
+
+      getCommandByKeystroke (keystroke) {
+        // 构建完整的当前快捷键映射
+        const currentKeymap = this.getCurrentKeymap()
+        return currentKeymap[keystroke] || null
+      },
+
+      getCurrentKeymap () {
+        // 从默认快捷键开始
+        const current = { ...keymap }
+        const custom = this.form.customKeymap || {}
+
+        // 首先移除被自定义快捷键覆盖的默认快捷键
+        Object.values(custom).forEach(command => {
+          // 找到并删除该命令在默认快捷键中的绑定
+          Object.keys(current).forEach(key => {
+            if (current[key] === command) {
+              delete current[key]
+            }
+          })
+        })
+
+        // 然后应用自定义快捷键
+        Object.keys(custom).forEach(key => {
+          current[key] = custom[key]
+        })
+
+        return current
       },
       getCommandLabel (command) {
         const map = {

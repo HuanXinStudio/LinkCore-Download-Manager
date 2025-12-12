@@ -155,5 +155,11 @@ export default {
   'downloading-file-suffix-tips': '在下載期間將此後綴新增到檔案，完成後會自動刪除',
   'downloading-file-suffix-format-warning': '下載後綴必須以"."開頭，會自動新增',
   'extension-channel': '擴展通道地址（應用 HTTP）',
-  'extension-copy-channel': '複製通道地址'
+  'extension-copy-channel': '複製通道地址',
+  'shortcuts': '快捷鍵',
+  'shortcut-command': '命令',
+  'shortcut-keystroke': '按鍵組合',
+  'shortcut-placeholder': '在此按下新的快捷鍵',
+  'shortcut-reset-default': '恢復默認快捷鍵',
+  'shortcut-duplicate-message': '快捷鍵 {{keystroke}} 已被命令 "{{command}}" 使用，請選擇其他快捷鍵'
 }

@@ -170,8 +170,7 @@ export default {
   'shortcut-keystroke': '按键组合',
   'shortcut-placeholder': '在此按下新的快捷键',
   'shortcut-reset-default': '恢复默认快捷键',
-  'shortcut-reserved': '该快捷键与系统常用快捷键冲突，请更换',
-  'shortcut-duplicated': '该快捷键已被其他命令占用'
+  'shortcut-duplicate-message': '快捷键 {{keystroke}} 已被命令 "{{command}}" 使用，请选择其他快捷键'
   ,
   'extension-rpc': '当前扩展使用的 RPC 地址',
   'extension-copy-rpc': '复制 RPC 地址',
