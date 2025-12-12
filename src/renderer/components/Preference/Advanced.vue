@@ -46,23 +46,6 @@
             </el-col>
           </el-form-item>
         </div>
-        <div class="preference-card">
-          <h3 class="card-title">磁力环境自检</h3>
-          <el-form-item size="mini">
-            <el-row :gutter="12" style="margin-bottom:12px">
-              <el-col :span="24">
-                <el-button type="primary" :loading="magnetCheckRunning" @click="runMagnetCheck">运行检测</el-button>
-                <el-button style="margin-left:8px" :loading="magnetOptimizeRunning" @click="applyMagnetOptimizations">一键优化</el-button>
-              </el-col>
-            </el-row>
-            <el-row v-for="item in magnetCheckItems" :key="item.key" :gutter="8" style="margin-bottom:6px">
-              <el-col :span="6"><strong>{{ item.label }}</strong></el-col>
-              <el-col :span="18">
-                <span :class="['magnet-check-status', item.status]">{{ item.text }}</span>
-              </el-col>
-            </el-row>
-          </el-form-item>
-        </div>
 
         <!-- 代理设置卡片 -->
         <div class="preference-card">
@@ -752,10 +735,7 @@
           'user-agent',
           'dir'
         ],
-        aria2ConfRawText: '',
-        magnetCheckRunning: false,
-        magnetOptimizeRunning: false,
-        magnetCheckItems: []
+        aria2ConfRawText: ''
       }
     },
     computed: {
@@ -1599,57 +1579,7 @@
           }
         })
       },
-      runMagnetCheck () {
-        this.magnetCheckRunning = true
-        const cfg = this.$store.state.preference.config || {}
-        const trackers = `${cfg.btTracker || cfg['bt-tracker'] || ''}`.trim()
-        const trackerCount = trackers ? trackers.split(/[\n,]+/).filter(Boolean).length : 0
-        const dhtPort = Number(cfg.dhtListenPort || cfg['dht-listen-port'] || 0)
-        const btPort = Number(cfg.listenPort || cfg['listen-port'] || 0)
-        const pauseNew = !!(cfg.pause)
-        const limitStr = `${cfg.maxOverallDownloadLimit || cfg['max-overall-download-limit'] || 0}`
-        const limitOk = (limitStr === '0' || Number(limitStr) >= 102400)
-        const rpcPort = Number(cfg.rpcListenPort || cfg['rpc-listen-port'] || 0)
-        const items = [
-          { key: 'trackers', label: 'Tracker 配置', status: trackerCount > 0 ? 'ok' : 'warn', text: trackerCount > 0 ? `已配置 ${trackerCount} 个` : '未配置，建议同步/添加公共 Tracker' },
-          { key: 'dht', label: 'DHT 端口', status: dhtPort > 0 ? 'ok' : 'warn', text: dhtPort > 0 ? `已启用，端口 ${dhtPort}` : '未启用，建议开启 DHT' },
-          { key: 'btport', label: 'BT 监听端口', status: btPort > 0 ? 'ok' : 'warn', text: btPort > 0 ? `已启用，端口 ${btPort}` : '未设置，建议开启 BT 端口' },
-          { key: 'pause', label: '新增任务默认暂停', status: !pauseNew ? 'ok' : 'warn', text: !pauseNew ? '已关闭' : '已开启，建议关闭以自动获取元数据' },
-          { key: 'limit', label: '全局下载限速', status: limitOk ? 'ok' : 'warn', text: limitOk ? '正常' : `当前为 ${limitStr}/s，建议提升或设为不限制` },
-          { key: 'rpc', label: 'RPC 端口', status: rpcPort > 0 ? 'ok' : 'warn', text: rpcPort > 0 ? `端口 ${rpcPort}` : '未设置，建议设置 RPC 端口' }
-        ]
-        this.magnetCheckItems = items
-        this.magnetCheckRunning = false
-      },
-      async applyMagnetOptimizations () {
-        this.magnetOptimizeRunning = true
-        const cfg = this.$store.state.preference.config || {}
-        const trackers = `${cfg.btTracker || cfg['bt-tracker'] || ''}`.trim()
-        const defaultTrackers = [
-          'udp://tracker.opentrackr.org:1337/announce',
-          'udp://open.demonii.com:1337/announce',
-          'udp://tracker.openbittorrent.com:80/announce',
-          'udp://tracker.coppersurfer.tk:6969/announce',
-          'udp://exodus.desync.com:6969/announce'
-        ].join('\n')
-        const data = {}
-        data.pause = false
-        data['max-overall-download-limit'] = 0
-        if (!trackers) {
-          data['bt-tracker'] = defaultTrackers
-        }
-        this.$store.dispatch('preference/save', data)
-          .then(() => {
-            this.$store.dispatch('app/fetchEngineOptions')
-            this.magnetOptimizeRunning = false
-            this.runMagnetCheck()
-            this.$msg.success('已应用优化设置')
-          })
-          .catch(() => {
-            this.magnetOptimizeRunning = false
-            this.$msg.error(this.$t('preferences.save-fail-message'))
-          })
-      },
+
       onFactoryResetClick () {
         dialog.showMessageBox({
           type: 'warning',
