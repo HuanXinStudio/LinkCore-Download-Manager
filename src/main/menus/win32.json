@@ -7,7 +7,7 @@
         { "id": "app.check-for-updates", "command": "application:check-for-updates" },
         { "id": "app.show", "command": "application:show", "command-arg": { "page": "index" } },
         { "type": "separator" },
-        { "id": "app.quit", "role": "quit" }
+        { "id": "app.quit", "command": "application:quit" }
       ]
     },
     {

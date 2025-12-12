@@ -238,6 +238,16 @@ export default class Application extends EventEmitter {
       logger.info(`[Motrix] detected ${key} value change event:`, newValue, oldValue)
       logger.transports.file.level = newValue
     })
+
+    const keymapKey = 'custom-keymap'
+    this.configListeners[keymapKey] = userConfig.onDidChange(keymapKey, async (newValue, oldValue) => {
+      try {
+        logger.info('[Motrix] detected custom-keymap change, rebuilding application menu')
+        this.menuManager && this.menuManager.setup()
+      } catch (e) {
+        logger.warn('[Motrix] rebuild menu failed after custom-keymap change:', e && e.message ? e.message : e)
+      }
+    })
   }
 
   initLocaleManager () {
@@ -1269,6 +1279,13 @@ export default class Application extends EventEmitter {
         ...context,
         version: appVersion
       }
+      try {
+        const customKeymap = this.configManager.getUserConfig('custom-keymap') ||
+          this.configManager.getUserConfig('customKeymap') || {}
+        if (customKeymap && Object.keys(customKeymap).length) {
+          this.menuManager && this.menuManager.setup()
+        }
+      } catch (e) {}
       return result
     })
 

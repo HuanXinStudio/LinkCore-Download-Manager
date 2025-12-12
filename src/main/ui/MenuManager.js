@@ -29,15 +29,26 @@ export default class MenuManager extends EventEmitter {
   }
 
   getMergedKeymap () {
-    const base = keymap
+    const base = { ...keymap }
     let custom = {}
     try {
       if (global.application && global.application.configManager) {
-        custom = global.application.configManager.getUserConfig('custom-keymap') || {}
+        // 兼容历史错误保存的 camelCase 键名
+        custom = global.application.configManager.getUserConfig('custom-keymap') ||
+          global.application.configManager.getUserConfig('customKeymap') || {}
       }
     } catch (e) {
       custom = {}
     }
+    try {
+      const commandsOverridden = new Set(Object.values(custom || {}))
+      Object.keys(base).forEach(ks => {
+        const cmd = base[ks]
+        if (commandsOverridden.has(cmd)) {
+          delete base[ks]
+        }
+      })
+    } catch (e) {}
     return { ...base, ...custom }
   }
 
