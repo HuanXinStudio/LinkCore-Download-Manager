@@ -109,9 +109,17 @@
           this.$store.dispatch('preference/updateLastCheckUpdateTime', Date.now())
         }
       }
+      const onUpdateError = () => {
+        const cfg = (this.$store.state.preference && this.$store.state.preference.config) || {}
+        const autoCheckEnabled = !!cfg.autoCheckUpdate
+        if (autoCheckEnabled && this.$msg) {
+          this.$msg.error(this.$t('app.update-error-message'))
+        }
+      }
       this.$electron.ipcRenderer.on('update-available', onUpdateAvailable)
       this.$electron.ipcRenderer.on('update-not-available', onUpdateNotAvailable)
-      this._updateHandlers = { onUpdateAvailable, onUpdateNotAvailable }
+      this.$electron.ipcRenderer.on('update-error', onUpdateError)
+      this._updateHandlers = { onUpdateAvailable, onUpdateNotAvailable, onUpdateError }
     },
     destroyed () {
       const h = this._updateHandlers || {}
@@ -120,6 +128,9 @@
       }
       if (h.onUpdateNotAvailable) {
         this.$electron.ipcRenderer.removeListener('update-not-available', h.onUpdateNotAvailable)
+      }
+      if (h.onUpdateError) {
+        this.$electron.ipcRenderer.removeListener('update-error', h.onUpdateError)
       }
     },
     watch: {

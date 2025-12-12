@@ -1,6 +1,5 @@
 import { EventEmitter } from 'node:events'
 import { resolve } from 'node:path'
-import { dialog } from 'electron'
 import is from 'electron-is'
 import { autoUpdater } from 'electron-updater'
 
@@ -196,6 +195,7 @@ export default class UpdateManager extends EventEmitter {
       : (error.stack || error).toString()
 
     this.updater.logger.warn(`[Motrix] update-error: ${msg}`)
-    dialog.showErrorBox('Error', msg)
+    // 不再显示系统弹窗，改为应用内通知
+    // dialog.showErrorBox('Error', msg)
   }
 }
