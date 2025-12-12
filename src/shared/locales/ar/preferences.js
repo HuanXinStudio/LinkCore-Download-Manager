@@ -153,5 +153,7 @@ export default {
   'engine-refreshing': 'جاري استرداد معلومات المحرك...',
   'downloading-file-suffix': 'الامتداد المرفق عند تحميل الملف',
   'downloading-file-suffix-tips': 'إضافة هذا الامتداد إلى الملفات أثناء التحميل، سيتم إزالته تلقائيًا بعد الانتهاء',
-  'downloading-file-suffix-format-warning': 'يجب أن يبدأ امتداد التحميل بـ "."، سيتم إضافته تلقائيًا'
+  'downloading-file-suffix-format-warning': 'يجب أن يبدأ امتداد التحميل بـ "."، سيتم إضافته تلقائيًا',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

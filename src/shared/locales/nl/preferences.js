@@ -153,5 +153,7 @@ export default {
   'engine-refreshing': 'Motorinformatie ophalen...',
   'downloading-file-suffix': 'Suffix toegevoegd tijdens bestand downloaden',
   'downloading-file-suffix-tips': 'Voeg deze suffix toe aan bestanden tijdens het downloaden, deze wordt automatisch verwijderd na voltooiing',
-  'downloading-file-suffix-format-warning': 'Downloadsuffix moet beginnen met ".", deze wordt automatisch toegevoegd'
+  'downloading-file-suffix-format-warning': 'Downloadsuffix moet beginnen met ".", deze wordt automatisch toegevoegd',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

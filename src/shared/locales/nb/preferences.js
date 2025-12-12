@@ -153,5 +153,7 @@ export default {
   'engine-refreshing': 'Henter motorinformasjon...',
   'downloading-file-suffix': 'Suffiks som legges til under nedlasting av filer',
   'downloading-file-suffix-tips': 'Legg til dette suffikset til filer under nedlasting, det vil bli fjernet automatisk etter fullført',
-  'downloading-file-suffix-format-warning': 'Nedlastingssuffikset må begynne med ".", det vil bli lagt til automatisk'
+  'downloading-file-suffix-format-warning': 'Nedlastingssuffikset må begynne med ".", det vil bli lagt til automatisk',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

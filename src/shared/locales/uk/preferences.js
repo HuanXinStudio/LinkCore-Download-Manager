@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'Отримання інформації про двигун...',
   'downloading-file-suffix': 'Суфікс, додається під час завантаження файлу',
   'downloading-file-suffix-tips': 'Додайте цей суфікс до файлів під час завантаження, він буде автоматично видалено після завершення',
-  'downloading-file-suffix-format-warning': 'Суфікс завантаження повинен починатися з ".", він буде автоматично додано'
+  'downloading-file-suffix-format-warning': 'Суфікс завантаження повинен починатися з ".", він буде автоматично додано',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

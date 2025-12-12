@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Sleep torrentbestand hier naartoe of klik om te selecteren',
   'task-info-dialog-title': '{{title}} Details',
   'download-start-message': 'Start downloaden van {{taskName}}',
+  'download-start-browser-message': 'Download van de browser ontvangen',
   'download-pause-message': 'Pauzeeer downloaden van {{taskName}}',
   'download-stop-message': 'Download van{{taskName}} gestopt',
   'download-error-message': 'Fout bij downloaden van {{taskName}} opgetreden',

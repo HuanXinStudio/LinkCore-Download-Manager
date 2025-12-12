@@ -157,6 +157,7 @@ export default {
   'task-detail-status-4': 'Fully downloaded',
   'task-info-dialog-title': '{{title}} Details',
   'download-start-message': 'Started downloading {{taskName}}',
+  'download-start-browser-message': 'Received browser download',
   'download-pause-message': 'Paused downloading {{taskName}}',
   'download-stop-message': 'Stopped downloading {{taskName}}',
   'download-error-message': 'Error occurred when downloading {{taskName}}',

@@ -107,6 +107,7 @@ export default {
   'task-detail-title': 'Thông tin tác vụ',
   'task-info-dialog-title': '{{title}} Chi tiết',
   'download-start-message': 'Bắt đầu tải xuống {{taskName}}',
+  'download-start-browser-message': 'Đã nhận tải xuống từ trình duyệt',
   'download-pause-message': 'Tạm dừng tải xuống {{taskName}}',
   'download-stop-message': 'Đã dừng tải xuống {{taskName}}',
   'download-error-message': 'Xảy ra lỗi khi tải xuống {{taskName}}',

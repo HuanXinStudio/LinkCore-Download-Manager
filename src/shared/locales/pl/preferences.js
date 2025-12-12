@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'Pobieranie informacji o silniku...',
   'downloading-file-suffix': 'Przyrostek dodawany podczas pobierania plików',
   'downloading-file-suffix-tips': 'Dodaj ten przyrostek do plików podczas pobierania, zostanie automatycznie usunięty po zakończeniu',
-  'downloading-file-suffix-format-warning': 'Przyrostek pobierania musi zaczynać się od ".", zostanie automatycznie dodany'
+  'downloading-file-suffix-format-warning': 'Przyrostek pobierania musi zaczynać się od ".", zostanie automatycznie dodany',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

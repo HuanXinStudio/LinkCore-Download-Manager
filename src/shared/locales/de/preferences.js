@@ -153,5 +153,7 @@ export default {
   'engine-refreshing': 'Motoreninformationen abrufen...',
   'downloading-file-suffix': 'Zusätzlicher Suffix beim Herunterladen von Dateien',
   'downloading-file-suffix-tips': 'Fügen Sie diesem Suffix Dateien während des Downloads hinzu, er wird nach Abschluss automatisch entfernt',
-  'downloading-file-suffix-format-warning': 'Das Download-Suffix muss mit "." beginnen, es wird automatisch hinzugefügt'
+  'downloading-file-suffix-format-warning': 'Das Download-Suffix muss mit "." beginnen, es wird automatisch hinzugefügt',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

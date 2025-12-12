@@ -128,6 +128,7 @@ export default {
   'task-detail-title': '任務詳細資訊',
   'task-info-dialog-title': '{{title}} 詳細資訊',
   'download-start-message': '開始下載 {{taskName}}',
+  'download-start-browser-message': '接收到瀏覽器傳來的下載',
   'download-pause-message': '暫停下載 {{taskName}}',
   'download-stop-message': '{{taskName}} 下載中止',
   'download-error-message': '{{taskName}} 下載錯誤',

@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'أفلت ملف التورنت هنا، أو اضغط تحديد',
   'task-info-dialog-title': '{{title}} تفاصيل',
   'download-start-message': 'بدأ تحميل {{taskName}}',
+  'download-start-browser-message': 'تم استلام تنزيل من المتصفح',
   'download-pause-message': 'وقف تحميل {{taskName}} مؤقتاً',
   'download-stop-message': 'وقف تحميل {{taskName}}',
   'download-error-message': 'حدث خطأ أثناء تحميل {{taskName}}',

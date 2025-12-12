@@ -152,5 +152,7 @@ export default {
   'engine-refreshing': 'Đang lấy thông tin động cơ...',
   'downloading-file-suffix': 'Hậu tố được thêm vào khi tải tệp',
   'downloading-file-suffix-tips': 'Thêm hậu tố này vào các tệp khi tải, nó sẽ được tự động xóa sau khi hoàn tất',
-  'downloading-file-suffix-format-warning': 'Hậu tố tải xuống phải bắt đầu bằng ".", nó sẽ được tự động thêm'
+  'downloading-file-suffix-format-warning': 'Hậu tố tải xuống phải bắt đầu bằng ".", nó sẽ được tự động thêm',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Húzz ide torrent fájl vagy talloz',
   'task-info-dialog-title': '{{title}} részletek',
   'download-start-message': 'Letöltés inditása {{taskName}}',
+  'download-start-browser-message': 'Böngészőből érkező letöltés fogadva',
   'download-pause-message': 'Letöltés szüneteltettve {{taskName}}',
   'download-stop-message': 'Letöltés megallitva {{taskName}}',
   'download-error-message': 'Hiba történk letöltés közben {{taskName}}',

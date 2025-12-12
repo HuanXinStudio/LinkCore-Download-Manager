@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'Motor bilgileri alınıyor...',
   'downloading-file-suffix': 'Dosya indirilirken eklenen sonek',
   'downloading-file-suffix-tips': 'Bu soneki indirme sırasında dosyalara ekleyin, tamamlandıktan sonra otomatik olarak silinecektir',
-  'downloading-file-suffix-format-warning': 'İndirme sonekı noktayla (.) başlamalıdır, bu otomatik olarak eklenecektir'
+  'downloading-file-suffix-format-warning': 'İndirme sonekı noktayla (.) başlamalıdır, bu otomatik olarak eklenecektir',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

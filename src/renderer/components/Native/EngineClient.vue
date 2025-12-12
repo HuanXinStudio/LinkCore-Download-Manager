@@ -100,12 +100,25 @@
         }
 
         this.fetchTaskItem({ gid })
-          .then((task) => {
+          .then(async (task) => {
             const { dir } = task
             this.$store.dispatch('preference/recordHistoryDirectory', dir)
             const taskName = getTaskName(task)
-            const message = this.$t('task.download-start-message', { taskName })
-            this.$msg.info(message)
+            try {
+              const opt = await api.getOption({ gid })
+              const hs = opt && opt.header ? opt.header : []
+              const headers = Array.isArray(hs) ? hs : (typeof hs === 'string' ? [hs] : [])
+              const fromHeader = headers.some(h => /X-LinkCore-Source\s*:\s*BrowserExtension/i.test(`${h}`))
+              const fromReferer = !!(opt && opt.referer && /^https?:/i.test(`${opt.referer}`))
+              if (fromHeader || fromReferer) {
+                const message = this.$t('task.download-start-browser-message')
+                this.$msg.info(message)
+                if (is.windows()) {
+                  /* eslint-disable no-new */
+                  new Notification(message, { body: taskName })
+                }
+              }
+            } catch (_) {}
 
             // 自动创建目标文件夹
             this.ensureTargetDirectoryExists(task)

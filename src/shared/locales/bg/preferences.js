@@ -149,5 +149,7 @@ export default {
   'engine-refreshing': 'Извличане на информация за двигателя...',
   'downloading-file-suffix': 'Добавен суфикс при сваляне на файл',
   'downloading-file-suffix-tips': 'Добавяне на този суфикс към файловете по време на сваляне, той ще бъде автоматично премахнат след завършване',
-  'downloading-file-suffix-format-warning': 'Суфиксът за сваляне трябва да започва с ".", той ще бъде автоматично добавен'
+  'downloading-file-suffix-format-warning': 'Суфиксът за сваляне трябва да започва с ".", той ще бъде автоматично добавен',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

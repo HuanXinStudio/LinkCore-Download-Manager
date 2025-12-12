@@ -102,47 +102,39 @@ export default class UpdateManager extends EventEmitter {
   }
 
   updateAvailable (event, info) {
-    this.emit('update-available', info)
-    // 向所有窗口发送更新可用事件，包含新版本号
+    const data = (info && typeof info === 'object') ? info : (event && typeof event === 'object' ? event : {})
+    this.emit('update-available', data)
     const windows = global.application?.windowManager?.getWindowList() || []
-
-    // 调试日志，查看info对象结构
-    logger.info('[Motrix] updateAvailable info:', JSON.stringify(info, null, 2))
-
-    // 检查info对象中的版本号字段，electron-updater通常使用info.version
-    const version = info?.version || info?.releaseName || 'unknown'
-
-    // 如果版本号仍然是unknown，尝试从其他可能的字段获取
-    let finalVersion = version
-    if (version === 'unknown') {
-      // 检查info对象中是否有其他版本相关字段
-      if (info && typeof info === 'object') {
-        for (const key in info) {
+    logger.info('[Motrix] updateAvailable info:', JSON.stringify(data, null, 2))
+    const versionPrimary = data?.version || data?.releaseName || (data?.updateInfo && data.updateInfo.version) || 'unknown'
+    let finalVersion = versionPrimary
+    if (versionPrimary === 'unknown') {
+      if (data && typeof data === 'object') {
+        for (const key in data) {
           if (key.toLowerCase().includes('version') || key.toLowerCase().includes('release')) {
-            const value = info[key]
+            const value = data[key]
             if (value && value !== 'unknown' && typeof value === 'string') {
               finalVersion = value
               break
             }
           }
+          const v = data.updateInfo && data.updateInfo.version
+          if (v && typeof v === 'string') {
+            finalVersion = v
+            break
+          }
         }
       }
     }
-
     logger.info('[Motrix] Sending update-available with version:', finalVersion)
-
     windows.forEach(window => {
       window.webContents.send('update-available', finalVersion)
     })
-
-    // 保存更新状态到配置文件，实现状态持久化
     if (global.application?.configManager) {
       global.application.configManager.setUserConfig('update-available', true)
       global.application.configManager.setUserConfig('new-version', finalVersion)
       global.application.configManager.setUserConfig('last-check-update-time', Date.now())
     }
-
-    // 不再自动下载更新，等待用户手动触发下载
   }
 
   updateNotAvailable (event, info) {

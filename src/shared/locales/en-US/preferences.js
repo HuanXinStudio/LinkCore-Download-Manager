@@ -168,4 +168,11 @@ export default {
   'shortcut-keystroke': 'Keystroke',
   'shortcut-placeholder': 'Press new shortcut here',
   'shortcut-reset-default': 'Reset to defaults'
+  ,
+  'extension-rpc': 'RPC URL used by the extension',
+  'extension-copy-rpc': 'Copy RPC URL',
+  'extension-tips': 'Install and enable the browser extension to hijack downloads automatically'
+  ,
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'エンジン情報を取得中...',
   'downloading-file-suffix': 'ファイルダウンロード時に追加されるサフィックス',
   'downloading-file-suffix-tips': 'ダウンロード中のファイルにこのサフィックスを追加し、完了後に自動的に削除します',
-  'downloading-file-suffix-format-warning': 'ダウンロードサフィックスは「.」で始まる必要があります。自動的に追加されます'
+  'downloading-file-suffix-format-warning': 'ダウンロードサフィックスは「.」で始まる必要があります。自動的に追加されます',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

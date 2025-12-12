@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Torrent mit Drag & Drop hinzufügen, oder klicken um auszuwählen',
   'task-info-dialog-title': '{{title}} Details',
   'download-start-message': 'Starte Download von {{taskName}}',
+  'download-start-browser-message': 'Browser-Download empfangen',
   'download-pause-message': 'Pausiere Download von {{taskName}}',
   'download-stop-message': 'Download von {{taskName}} gestoppt',
   'download-error-message': 'Fehler beim Download von {{taskName}} aufgetreten',

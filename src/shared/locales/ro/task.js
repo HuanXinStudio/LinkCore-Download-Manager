@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Trageți fișierul torrent aici sau faceți clic pentru a selecta',
   'task-info-dialog-title': '{{title}} Detalii',
   'download-start-message': 'Descărcarea a început {{taskName}}',
+  'download-start-browser-message': 'Descărcare primită din browser',
   'download-pause-message': 'Descărcare întreruptă {{taskName}}',
   'download-stop-message': 'Descărcare oprită {{taskName}}',
   'download-error-message': 'A apărut o eroare la descărcare {{taskName}}',

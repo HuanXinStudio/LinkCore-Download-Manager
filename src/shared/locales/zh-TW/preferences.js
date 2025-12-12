@@ -153,5 +153,7 @@ export default {
   'engine-refreshing': '取得引擎資訊中...',
   'downloading-file-suffix': '下載檔案時新增的後綴',
   'downloading-file-suffix-tips': '在下載期間將此後綴新增到檔案，完成後會自動刪除',
-  'downloading-file-suffix-format-warning': '下載後綴必須以"."開頭，會自動新增'
+  'downloading-file-suffix-format-warning': '下載後綴必須以"."開頭，會自動新增',
+  'extension-channel': '擴展通道地址（應用 HTTP）',
+  'extension-copy-channel': '複製通道地址'
 }

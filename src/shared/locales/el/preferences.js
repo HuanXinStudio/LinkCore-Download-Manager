@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'Ανάκτηση πληροφοριών κινητήρα...',
   'downloading-file-suffix': 'Προσθήκη επمتίτλου κατά τη λήψη αρχείου',
   'downloading-file-suffix-tips': 'Προσθέστε αυτόν τον επمتίτλο στα αρχεία κατά τη λήψη, θα αφαιρεθεί αυτόματα μετά την ολοκλήρωση',
-  'downloading-file-suffix-format-warning': 'Η επمتίτλο λήψης πρέπει να ξεκινά με ".", θα προστεθεί αυτόματα'
+  'downloading-file-suffix-format-warning': 'Η επمتίτλο λήψης πρέπει να ξεκινά με ".", θα προστεθεί αυτόματα',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'Mendapatkan informasi mesin...',
   'downloading-file-suffix': 'Suffix ditambahkan saat mengunduh file',
   'downloading-file-suffix-tips': 'Tambahkan suffix ini ke file selama pengunduhan, ini akan secara otomatis dihapus setelah selesai',
-  'downloading-file-suffix-format-warning': 'Suffix pengunduhan harus dimulai dengan ".", ini akan ditambahkan secara otomatis'
+  'downloading-file-suffix-format-warning': 'Suffix pengunduhan harus dimulai dengan ".", ini akan ditambahkan secara otomatis',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

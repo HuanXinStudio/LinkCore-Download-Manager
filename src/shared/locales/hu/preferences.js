@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'Motor információk lekérése...',
   'downloading-file-suffix': 'Fájl letöltésekor hozzáadott suffix',
   'downloading-file-suffix-tips': 'Adja hozzá ezt a suffix-et a fájlokhoz a letöltés során, automatikusan eltávolítódik a befejezés után',
-  'downloading-file-suffix-format-warning': 'A letöltési suffixnek ponttal (.) kell kezdődnie, automatikusan hozzáadódik'
+  'downloading-file-suffix-format-warning': 'A letöltési suffixnek ponttal (.) kell kezdődnie, automatikusan hozzáadódik',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

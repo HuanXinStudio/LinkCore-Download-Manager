@@ -153,5 +153,7 @@ export default {
   'engine-refreshing': 'กำลังดึงข้อมูลเครื่องยนต์...',
   'downloading-file-suffix': 'ตัวต่อที่เพิ่มในระหว่างดาวน์โหลดไฟล์',
   'downloading-file-suffix-tips': 'เพิ่มตัวต่อนี้ไปยังไฟล์ในระหว่างดาวน์โหลด จะถูกลบอัตโนมัติหลังจากเสร็จสิ้น',
-  'downloading-file-suffix-format-warning': 'ตัวต่อนการดาวน์โหลดต้องเริ่มต้นด้วย "." ซึ่งจะถูกเพิ่มอัตโนมัติ'
+  'downloading-file-suffix-format-warning': 'ตัวต่อนการดาวน์โหลดต้องเริ่มต้นด้วย "." ซึ่งจะถูกเพิ่มอัตโนมัติ',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

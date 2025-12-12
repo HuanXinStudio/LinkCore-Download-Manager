@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Σύρτε το αρχείο torrent εδώ, ή κάντε κλικ για επιλογή',
   'task-info-dialog-title': 'Λεπτομέρειες για το {{title}}',
   'download-start-message': 'Η λήψη του {{taskName}} ξεκίνησε',
+  'download-start-browser-message': 'Ελήφθη λήψη από το πρόγραμμα περιήγησης',
   'download-pause-message': 'Η λήψη του {{taskName}} σταμάτησε',
   'download-stop-message': 'Η λήψη του {{taskName}} διακόπηκε',
   'download-error-message': 'Σφάλμα κατά τη λήψη του {{taskName}}',

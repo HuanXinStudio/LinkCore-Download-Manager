@@ -2,14 +2,15 @@ import { EventEmitter } from 'node:events'
 import { readFile, unlink } from 'node:fs'
 import { extname, basename } from 'node:path'
 import { app, shell, dialog, ipcMain } from 'electron'
+import { createServer } from 'node:http'
 import is from 'electron-is'
 import { isEmpty, isEqual } from 'lodash'
 
 import {
   APP_RUN_MODE,
   AUTO_SYNC_TRACKER_INTERVAL,
-  AUTO_CHECK_UPDATE_INTERVAL,
-  PROXY_SCOPES
+  PROXY_SCOPES,
+  APP_HTTP_PORT
 } from '@shared/constants'
 import { checkIsNeedRun } from '@shared/utils'
 import {
@@ -40,6 +41,7 @@ export default class Application extends EventEmitter {
   constructor () {
     super()
     this.isReady = false
+    this._updateStatusInitialized = false
     this.init()
   }
 
@@ -86,10 +88,102 @@ export default class Application extends EventEmitter {
 
     this.handleIpcInvokes()
 
+    this.initAppHttpServer()
+
     // 应用启动时自动获取引擎信息
     await this.autoFetchEngineInfo()
 
     this.emit('application:initialized')
+  }
+
+  initAppHttpServer () {
+    try {
+      const server = createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept')
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204)
+          res.end()
+          return
+        }
+        const url = req.url || ''
+        if (url.startsWith('/linkcore/version')) {
+          const version = app.getVersion()
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ version }))
+          return
+        }
+        if (url.startsWith('/linkcore/tasks')) {
+          (async () => {
+            try {
+              const keys = ['gid', 'status', 'totalLength', 'completedLength', 'downloadSpeed', 'files']
+              const data = await this.engineClient.call('tellActive', keys) || []
+              let totalSpeed = 0
+              const tasks = data.map(it => {
+                const tl = Number(it.totalLength || 0)
+                const cl = Number(it.completedLength || 0)
+                const ds = Number(it.downloadSpeed || 0)
+                const percent = tl > 0 ? Math.floor((cl / tl) * 100) : 0
+                const name = it.files && it.files[0] && it.files[0].path ? it.files[0].path.split('/').pop() : ''
+                totalSpeed += ds
+                return { gid: it.gid, status: it.status, total: tl, completed: cl, speed: ds, percent, name }
+              })
+              res.writeHead(200, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ totalSpeed, tasks }))
+            } catch (err) {
+              res.writeHead(500, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ totalSpeed: 0, tasks: [] }))
+            }
+          })()
+          return
+        }
+        if (url.startsWith('/linkcore/add')) {
+          let body = ''
+          req.on('data', (chunk) => {
+            body += chunk
+          })
+          req.on('end', async () => {
+            try {
+              const payload = body ? JSON.parse(body) : {}
+              const { url, referer, headers } = payload
+              if (!url || !/^https?:/i.test(url)) {
+                res.writeHead(400, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ ok: false, error: 'invalid url' }))
+                return
+              }
+              const options = { header: Array.isArray(headers) && headers.length ? headers : ['X-LinkCore-Source: BrowserExtension'] }
+              if (referer) options.referer = referer
+              const result = await this.engineClient.call('addUri', [url], options)
+              if (result) {
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ ok: true, gid: result }))
+              } else {
+                res.writeHead(500, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ ok: false }))
+              }
+            } catch (err) {
+              res.writeHead(500, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ ok: false }))
+            }
+          })
+          return
+        }
+        if (url.startsWith('/linkcore/health')) {
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ ok: true }))
+          return
+        }
+        res.writeHead(404, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Not Found' }))
+      })
+      server.listen(APP_HTTP_PORT, '127.0.0.1', () => {
+        logger.info(`[Motrix] App HTTP server listening at http://127.0.0.1:${APP_HTTP_PORT}/`)
+      })
+      this.httpServer = server
+    } catch (e) {
+      logger.warn('[Motrix] Failed to start app HTTP server:', e && e.message ? e.message : e)
+    }
   }
 
   async autoFetchEngineInfo () {
@@ -720,8 +814,7 @@ export default class Application extends EventEmitter {
 
     const enabled = this.configManager.getUserConfig('auto-check-update')
     const proxy = this.configManager.getSystemConfig('all-proxy')
-    const lastTime = this.configManager.getUserConfig('last-check-update-time')
-    const autoCheck = checkIsNeedRun(enabled, lastTime, AUTO_CHECK_UPDATE_INTERVAL)
+    const autoCheck = enabled
     this.updateManager = new UpdateManager({
       autoCheck,
       proxy
@@ -736,6 +829,10 @@ export default class Application extends EventEmitter {
       this.configManager.setUserConfig('last-check-update-time', Date.now())
     })
 
+    this.updateManager.on('update-available', () => {
+      this._updateStatusInitialized = true
+    })
+
     this.updateManager.on('download-progress', (event) => {
       const win = this.windowManager.getWindow('index')
       win.setProgressBar(event.percent / 100)
@@ -747,6 +844,7 @@ export default class Application extends EventEmitter {
     })
 
     this.updateManager.on('update-not-available', (event) => {
+      this._updateStatusInitialized = true
       this.menuManager.updateMenuItemEnabledState('app.check-for-updates', true)
       this.trayManager.updateMenuItemEnabledState('app.check-for-updates', true)
     })
@@ -1215,6 +1313,9 @@ export default class Application extends EventEmitter {
    */
   loadAndSendUpdateStatus () {
     try {
+      if (this._updateStatusInitialized) {
+        return
+      }
       // 从用户配置中加载保存的更新状态
       const updateAvailable = this.configManager.getUserConfig('update-available') || false
       const newVersion = this.configManager.getUserConfig('new-version') || ''

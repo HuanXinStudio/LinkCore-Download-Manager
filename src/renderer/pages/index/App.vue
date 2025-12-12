@@ -79,6 +79,49 @@
     beforeMount () {
       this.updateRootClassName()
     },
+    mounted () {
+      this._updateMessageShown = false
+      const onUpdateAvailable = (event, version) => {
+        const cfg = (this.$store.state.preference && this.$store.state.preference.config) || {}
+        const autoCheckEnabled = !!cfg.autoCheckUpdate
+        if (autoCheckEnabled) {
+          this.$store.dispatch('preference/updateUpdateAvailable', true)
+          this.$store.dispatch('preference/updateNewVersion', version)
+          this.$store.dispatch('preference/updateLastCheckUpdateTime', Date.now())
+        }
+        if (this.$msg && autoCheckEnabled && !this._updateMessageShown) {
+          this.$msg.info({
+            message: this.$t('app.update-available-message'),
+            duration: 0,
+            onClick: () => {
+              this.$router.push({ path: '/preference' }).catch(() => {})
+            }
+          })
+          this._updateMessageShown = true
+        }
+      }
+      const onUpdateNotAvailable = () => {
+        const cfg = (this.$store.state.preference && this.$store.state.preference.config) || {}
+        const autoCheckEnabled = !!cfg.autoCheckUpdate
+        if (autoCheckEnabled) {
+          this.$store.dispatch('preference/updateUpdateAvailable', false)
+          this.$store.dispatch('preference/updateNewVersion', '')
+          this.$store.dispatch('preference/updateLastCheckUpdateTime', Date.now())
+        }
+      }
+      this.$electron.ipcRenderer.on('update-available', onUpdateAvailable)
+      this.$electron.ipcRenderer.on('update-not-available', onUpdateNotAvailable)
+      this._updateHandlers = { onUpdateAvailable, onUpdateNotAvailable }
+    },
+    destroyed () {
+      const h = this._updateHandlers || {}
+      if (h.onUpdateAvailable) {
+        this.$electron.ipcRenderer.removeListener('update-available', h.onUpdateAvailable)
+      }
+      if (h.onUpdateNotAvailable) {
+        this.$electron.ipcRenderer.removeListener('update-not-available', h.onUpdateNotAvailable)
+      }
+    },
     watch: {
       locale (val) {
         const lng = getLanguage(val)

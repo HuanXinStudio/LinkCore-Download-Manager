@@ -107,6 +107,7 @@ export default {
   'task-detail-title': 'รายละเอียดงาน',
   'task-info-dialog-title': 'รายละเอียด {{title}}',
   'download-start-message': 'เริ่มดาวน์โหลดแล้ว {{taskName}}',
+  'download-start-browser-message': 'ได้รับการดาวน์โหลดจากเบราว์เซอร์',
   'download-pause-message': 'หยุดการดาวน์โหลดชั่วคราว {{taskName}}',
   'download-stop-message': 'หยุดดาวน์โหลด {{taskName}}',
   'download-error-message': 'เกิดข้อผิดพลาดขณะดาวน์โหลด {{taskName}}',

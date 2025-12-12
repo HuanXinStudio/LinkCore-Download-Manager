@@ -157,6 +157,7 @@ export default {
   'task-detail-status-4': '已完全下载',
   'task-info-dialog-title': '{{title}} 详情',
   'download-start-message': '开始下载 {{taskName}}',
+  'download-start-browser-message': '接收到浏览器传来的下载',
   'download-pause-message': '暂停下载 {{taskName}}',
   'download-stop-message': '{{taskName}} 下载中止',
   'download-error-message': '{{taskName}} 下载发生错误',

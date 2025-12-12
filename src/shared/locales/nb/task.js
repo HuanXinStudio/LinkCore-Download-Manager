@@ -107,6 +107,7 @@ export default {
   'task-detail-title': 'Oppgavedetaljer',
   'task-info-dialog-title': '{{title}} Detaljer',
   'download-start-message': 'Lastet ned {{taskName}}',
+  'download-start-browser-message': 'Mottok nedlasting fra nettleseren',
   'download-pause-message': 'Nedlasting av {{taskName}} er midlertidig stoppet',
   'download-stop-message': 'Nedlastingen stoppet ikke {{taskName}}',
   'download-error-message': 'Det oppstod en feil under nedlasting av {{taskName}}',

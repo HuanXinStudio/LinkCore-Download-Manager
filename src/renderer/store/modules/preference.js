@@ -15,7 +15,9 @@ const state = {
   // 版本更新状态持久化存储
   updateAvailable: false,
   newVersion: '',
-  lastCheckUpdateTime: 0
+  lastCheckUpdateTime: 0,
+  isDownloadingUpdate: false,
+  downloadProgress: 0
 }
 
 const getters = {
@@ -52,6 +54,12 @@ const mutations = {
   },
   UPDATE_LAST_CHECK_UPDATE_TIME (state, lastCheckUpdateTime) {
     state.lastCheckUpdateTime = lastCheckUpdateTime
+  },
+  UPDATE_IS_DOWNLOADING_UPDATE (state, isDownloadingUpdate) {
+    state.isDownloadingUpdate = isDownloadingUpdate
+  },
+  UPDATE_DOWNLOAD_PROGRESS (state, downloadProgress) {
+    state.downloadProgress = downloadProgress
   }
 }
 
@@ -160,6 +168,12 @@ const actions = {
   },
   updateLastCheckUpdateTime ({ commit }, lastCheckUpdateTime) {
     commit('UPDATE_LAST_CHECK_UPDATE_TIME', lastCheckUpdateTime)
+  },
+  updateIsDownloadingUpdate ({ commit }, isDownloadingUpdate) {
+    commit('UPDATE_IS_DOWNLOADING_UPDATE', isDownloadingUpdate)
+  },
+  updateDownloadProgress ({ commit }, downloadProgress) {
+    commit('UPDATE_DOWNLOAD_PROGRESS', downloadProgress)
   },
   fetchBtTracker (_, trackerSource = []) {
     const { proxy = { enable: false } } = state.config

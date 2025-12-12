@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Trascina il file torrent qua o clicca per selezionarlo',
   'task-info-dialog-title': 'Dettagli {{title}}',
   'download-start-message': 'Iniziato il download di {{taskName}}',
+  'download-start-browser-message': 'Download ricevuto dal browser',
   'download-pause-message': 'Download di {{taskName}} in pausa',
   'download-stop-message': 'Download di {{taskName}} stoppato',
   'download-error-message': 'Errore durante il download di {{taskName}}',

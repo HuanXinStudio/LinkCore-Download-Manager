@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'Obținerea informațiilor motorului...',
   'downloading-file-suffix': 'Sufix adăugat în timpul descărcării fișierului',
   'downloading-file-suffix-tips': 'Adăugați acest sufix la fișiere în timpul descărcării, acesta va fi eliminat automat după finalizarea',
-  'downloading-file-suffix-format-warning': 'Sufixul de descărcare trebuie să înceapă cu ".", acesta va fi adăugat automat'
+  'downloading-file-suffix-format-warning': 'Sufixul de descărcare trebuie să înceapă cu ".", acesta va fi adăugat automat',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

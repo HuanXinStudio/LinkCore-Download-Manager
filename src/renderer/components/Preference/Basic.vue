@@ -119,7 +119,7 @@
                 />
               </el-col>
             </el-row>
-            <el-button type="warning" size="mini" @click="form.customKeymap = {}; autoSaveForm()">
+            <el-button type="warning" size="mini" style="width: 100%;" @click="form.customKeymap = {}; autoSaveForm()">
               {{ $t('preferences.shortcut-reset-default') }}
             </el-button>
           </el-form-item>
@@ -147,6 +147,29 @@
               <el-checkbox v-model="form.resumeAllWhenAppLaunched" @change="autoSaveForm">
                 {{ $t('preferences.auto-resume-all') }}
               </el-checkbox>
+            </el-col>
+          </el-form-item>
+        </div>
+
+        <!-- 扩展卡片 -->
+        <div class="preference-card">
+          <h3 class="card-title">{{ $t('preferences.browser-extensions') }}</h3>
+          <el-form-item size="mini">
+            <el-col class="form-item-sub" :span="24">
+              <div class="form-item-sub">
+                {{ $t('preferences.extension-channel') }}
+                <el-input :value="appChannelUrl" readonly>
+                  <el-button
+                    slot="append"
+                    icon="el-icon-document-copy"
+                    @click="copyChannelUrl">
+                    {{ $t('preferences.extension-copy-channel') }}
+                  </el-button>
+                </el-input>
+              </div>
+              <div class="el-form-item__info" style="margin-top: 8px;">
+                {{ $t('preferences.extension-tips') }}
+              </div>
             </el-col>
           </el-form-item>
         </div>
@@ -470,10 +493,10 @@
     extractSpeedUnit
   } from '@shared/utils'
   import {
+    APP_HTTP_PORT,
     APP_RUN_MODE,
     EMPTY_STRING,
-    ENGINE_MAX_CONCURRENT_DOWNLOADS,
-    ENGINE_RPC_PORT
+    ENGINE_MAX_CONCURRENT_DOWNLOADS
   } from '@shared/constants'
   import { reduceTrackerString } from '@shared/utils/tracker'
   import keymap from '@shared/keymap'
@@ -706,8 +729,8 @@
       showHideAppMenuOption () {
         return is.windows() || is.linux()
       },
-      rpcDefaultPort () {
-        return ENGINE_RPC_PORT
+      appChannelUrl () {
+        return `http://127.0.0.1:${APP_HTTP_PORT}`
       },
       ...mapState('preference', {
         config: state => state.config
@@ -918,6 +941,17 @@
         this.form.dir = dir
         this.$store.dispatch('preference/recordHistoryDirectory', dir)
         this.autoSaveForm()
+      },
+      copyChannelUrl () {
+        const text = this.appChannelUrl
+        if (!text) return
+        navigator.clipboard.writeText(text)
+          .then(() => {
+            this.$msg.success(this.$t('preferences.save-success-message'))
+          })
+          .catch(() => {
+            this.$msg.error(this.$t('preferences.save-fail-message'))
+          })
       },
       onDirectorySelected (dir) {
         this.form.dir = dir

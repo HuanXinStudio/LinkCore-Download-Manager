@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Seret berkas torrent ke sini, atau klik untuk memilih',
   'task-info-dialog-title': '{{title}} Detail',
   'download-start-message': 'Memulai mengunduh {{taskName}}',
+  'download-start-browser-message': 'Unduhan dari browser diterima',
   'download-pause-message': 'Menunda mengunduh {{taskName}}',
   'download-stop-message': 'Berhenti mengunduh {{taskName}}',
   'download-error-message': 'Terjadi kesalahan saat mengunduh {{taskName}}',

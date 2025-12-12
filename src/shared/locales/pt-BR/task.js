@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Arraste o torrent aqui, ou clique para selecionar',
   'task-info-dialog-title': '{{title}} Detalhes',
   'download-start-message': 'Iniciar download {{taskName}}',
+  'download-start-browser-message': 'Download recebido do navegador',
   'download-pause-message': 'Pausar download {{taskName}}',
   'download-stop-message': '{{taskName}} download parado',
   'download-error-message': '{{taskName}} ocorreu um erro no download',

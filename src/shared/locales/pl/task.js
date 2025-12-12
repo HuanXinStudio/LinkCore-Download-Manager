@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Przenieś tutaj plik torrent, lub naciśnij aby wybrać',
   'task-info-dialog-title': 'Szczegóły {{title}}',
   'download-start-message': 'Rozpoczęto pobieranie {{taskName}}',
+  'download-start-browser-message': 'Odebrano pobieranie z przeglądarki',
   'download-pause-message': 'Wstrzymano pobieranie {{taskName}}',
   'download-stop-message': 'Zatrzymano pobieranie {{taskName}}',
   'download-error-message': 'Wystąpił błąd podczas pobierania {{taskName}}',

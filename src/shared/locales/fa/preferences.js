@@ -110,5 +110,7 @@ export default {
   'last-check-update-time': 'آخرین زمان بررسی برای به‌روز رسانی',
   'not-saved': 'تنظیمات برگزیده ذخیره نشد',
   'not-saved-confirm': 'تنظیمات برگزیده تغییر یافته از بین خواهند رفت، آیا مطمئن هستید که می روید؟',
-  'undo-change': 'لغو تغییر'
+  'undo-change': 'لغو تغییر',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

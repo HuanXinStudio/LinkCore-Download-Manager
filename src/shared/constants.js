@@ -45,6 +45,9 @@ export const ENGINE_RPC_PORT = 16800
 export const ENGINE_MAX_CONCURRENT_DOWNLOADS = 10
 export const ENGINE_MAX_CONNECTION_PER_SERVER = 64
 
+// Local app HTTP endpoint for browser extension
+export const APP_HTTP_PORT = 16900
+
 export const UNKNOWN_PEERID = '%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00'
 export const UNKNOWN_PEERID_NAME = 'unknown'
 export const GRAPHIC = '░▒▓█'

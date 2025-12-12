@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Перетяните torrent файл сюда, или нажмите выбрать',
   'task-info-dialog-title': '{{title}} Детали',
   'download-start-message': 'Началась загрузка {{taskName}}',
+  'download-start-browser-message': 'Получена загрузка из браузера',
   'download-pause-message': 'Приостановить загрузку {{taskName}}',
   'download-stop-message': 'Остановить загрузку {{taskName}}',
   'download-error-message': 'Ошибка во время загрузки {{taskName}}',

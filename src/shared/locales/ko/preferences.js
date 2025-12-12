@@ -153,5 +153,7 @@ export default {
   'engine-refreshing': '엔진 정보를 가져오는 중...',
   'downloading-file-suffix': '파일 다운로드 시 추가되는 접미사',
   'downloading-file-suffix-tips': '다운로드 중인 파일에 이 접미사를 추가하고 완료 후 자동으로 제거합니다',
-  'downloading-file-suffix-format-warning': '다운로드 접미사는 "."로 시작해야 합니다. 자동으로 추가됩니다'
+  'downloading-file-suffix-format-warning': '다운로드 접미사는 "."로 시작해야 합니다. 자동으로 추가됩니다',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

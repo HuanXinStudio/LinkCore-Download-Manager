@@ -1170,11 +1170,17 @@
         const onUpdateNotAvailable = () => {
           this.$msg.success(this.$t('app.update-not-available-message'))
           this.updateCheckingUpdate(false)
+          this.$store.dispatch('preference/updateUpdateAvailable', false)
+          this.$store.dispatch('preference/updateNewVersion', '')
+          this.$store.dispatch('preference/updateLastCheckUpdateTime', Date.now())
         }
 
         const onUpdateAvailable = (event, version) => {
           this.$msg.info(this.$t('app.update-available-message'))
           this.updateCheckingUpdate(false)
+          this.$store.dispatch('preference/updateUpdateAvailable', true)
+          this.$store.dispatch('preference/updateNewVersion', version)
+          this.$store.dispatch('preference/updateLastCheckUpdateTime', Date.now())
         }
 
         // 使用once监听事件，确保事件只处理一次

@@ -108,5 +108,7 @@ export default {
   'last-check-update-time': 'Última revisió d\'actualitzacions',
   'not-saved': 'Preferències no desades',
   'not-saved-confirm': 'Les preferències modificades es perdran, esteu segur que marxareu?',
-  'undo-change': 'Desfer canvi'
+  'undo-change': 'Desfer canvi',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

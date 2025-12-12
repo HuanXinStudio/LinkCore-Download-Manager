@@ -106,6 +106,7 @@ export default {
   'select-torrent':'плъзнете торент файла тук, или натиснете Избери',
   'task-info-dialog-title':'{{Title}} детайли',
   'download-start-message': 'изтеглянето започна {{taskName}}',
+  'download-start-browser-message': 'Получено изтегляне от браузъра',
   'download-pause-message': 'спиране на изтеглянето {{taskName}}',
   'download-stop-message': 'спиране на изтеглянето {{taskName}}',
   'download-error-message': 'грешка при изтегляне {{taskName}}',

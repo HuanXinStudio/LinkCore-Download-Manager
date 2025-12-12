@@ -63,7 +63,7 @@
     },
     computed: {
       ...mapState('app', ['isCheckingUpdate']),
-      ...mapState('preference', ['updateAvailable', 'newVersion']),
+      ...mapState('preference', ['updateAvailable', 'newVersion', 'isDownloadingUpdate', 'downloadProgress']),
       title () {
         return this.$t('subnav.preferences')
       },
@@ -86,16 +86,24 @@
       })
 
       this.$electron.ipcRenderer.on('update-available', (event, version) => {
-        this.updateUpdateAvailable(true)
-        this.updateNewVersion(version)
-        this.updateLastCheckUpdateTime(Date.now())
+        const cfg = (this.$store.state.preference && this.$store.state.preference.config) || {}
+        const autoCheckEnabled = !!cfg.autoCheckUpdate
+        if (autoCheckEnabled) {
+          this.updateUpdateAvailable(true)
+          this.updateNewVersion(version)
+          this.updateLastCheckUpdateTime(Date.now())
+        }
         this.updateCheckingUpdate(false)
       })
 
       this.$electron.ipcRenderer.on('update-not-available', () => {
-        this.updateUpdateAvailable(false)
-        this.updateNewVersion('')
-        this.updateLastCheckUpdateTime(Date.now())
+        const cfg = (this.$store.state.preference && this.$store.state.preference.config) || {}
+        const autoCheckEnabled = !!cfg.autoCheckUpdate
+        if (autoCheckEnabled) {
+          this.updateUpdateAvailable(false)
+          this.updateNewVersion('')
+          this.updateLastCheckUpdateTime(Date.now())
+        }
         this.updateCheckingUpdate(false)
       })
 
@@ -105,9 +113,8 @@
 
       // 监听下载进度事件
       this.$electron.ipcRenderer.on('download-progress', (event, progress) => {
-        if (this.isDownloading) {
-          this.downloadProgress = Math.round(progress.percent)
-        }
+        const percent = Math.round(progress.percent)
+        this.updateDownloadProgress(percent)
       })
     },
     beforeDestroy () {
@@ -120,7 +127,7 @@
     },
     methods: {
       ...mapActions('app', ['updateCheckingUpdate']),
-      ...mapActions('preference', ['updateUpdateAvailable', 'updateNewVersion', 'updateLastCheckUpdateTime']),
+      ...mapActions('preference', ['updateUpdateAvailable', 'updateNewVersion', 'updateLastCheckUpdateTime', 'updateIsDownloadingUpdate', 'updateDownloadProgress']),
       nav (category = 'basic') {
         this.$router.push({
           path: `/preference/${category}`
@@ -131,7 +138,7 @@
 
       // 获取版本显示文本
       getVersionText () {
-        if (this.isDownloading) {
+        if (this.isDownloadingUpdate) {
           return `下载中 ${this.downloadProgress}%`
         } else if (this.updateAvailable) {
           return `下载新版本 ${this.newVersion}`
@@ -178,15 +185,17 @@
         const onUpdateNotAvailable = () => {
           this.showMessage('success', this.$t('app.update-not-available-message'))
           this.updateCheckingUpdate(false)
-          this.updateAvailable = false
-          this.newVersion = ''
+          this.updateUpdateAvailable(false)
+          this.updateNewVersion('')
+          this.updateLastCheckUpdateTime(Date.now())
         }
 
         const onUpdateAvailable = (event, version) => {
           this.showMessage('info', this.$t('app.update-available-message'))
           this.updateCheckingUpdate(false)
-          this.updateAvailable = true
-          this.newVersion = version
+          this.updateUpdateAvailable(true)
+          this.updateNewVersion(version)
+          this.updateLastCheckUpdateTime(Date.now())
         }
 
         // 使用once监听事件，确保事件只处理一次
@@ -227,22 +236,21 @@
 
       // 下载更新
       downloadUpdate () {
-        if (this.isDownloading) return
-
-        this.isDownloading = true
-        this.downloadProgress = 0
+        if (this.isDownloadingUpdate) return
+        this.updateIsDownloadingUpdate(true)
+        this.updateDownloadProgress(0)
 
         // 显示下载开始消息
         this.showMessage('info', '开始下载新版本...')
 
         // 监听下载进度事件
         const onDownloadProgress = (event, progress) => {
-          this.downloadProgress = Math.round(progress.percent)
+          this.updateDownloadProgress(Math.round(progress.percent))
         }
 
         // 监听下载完成事件
         const onDownloaded = () => {
-          this.isDownloading = false
+          this.updateIsDownloadingUpdate(false)
           this.updateUpdateAvailable(false)
           this.showMessage('success', '更新下载完成，应用程序将自动重启并安装更新')
 
@@ -254,7 +262,7 @@
 
         // 监听下载错误事件
         const onDownloadError = () => {
-          this.isDownloading = false
+          this.updateIsDownloadingUpdate(false)
           this.showMessage('error', '下载更新失败，请检查网络连接后重试')
 
           // 移除事件监听器

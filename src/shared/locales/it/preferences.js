@@ -151,5 +151,7 @@ export default {
   'engine-refreshing': 'Recupero informazioni motore...',
   'downloading-file-suffix': 'Suffix aggiunto durante il download del file',
   'downloading-file-suffix-tips': 'Aggiungi questo suffix ai file durante il download, verrà rimosso automaticamente dopo il completamento',
-  'downloading-file-suffix-format-warning': 'Il suffix di download deve iniziare con ".", verrà aggiunto automaticamente'
+  'downloading-file-suffix-format-warning': 'Il suffisso di download deve iniziare con ".", verrà aggiunto automaticamente',
+  'extension-channel': 'Extension channel URL (App HTTP)',
+  'extension-copy-channel': 'Copy channel URL'
 }

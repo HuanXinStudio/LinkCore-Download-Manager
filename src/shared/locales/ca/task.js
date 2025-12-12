@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Arrosega un arxiu Torrent aquí o fes click en seleccionar',
   'task-info-dialog-title': 'Detalls de {{title}}',
   'download-start-message': 'S\'ha iniciat la descàrrega de {{taskName}}',
+  'download-start-browser-message': 'S\'ha rebut una descàrrega del navegador',
   'download-pause-message': 'S\'ha pausat la descàrrega de {{taskName}}',
   'download-stop-message': 'S\'ha detingut la descàrrega de {{taskName}}',
   'download-error-message': 'Ha ocurrit un error en descarregar {{taskName}}',

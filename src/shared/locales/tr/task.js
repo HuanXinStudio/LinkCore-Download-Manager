@@ -106,6 +106,7 @@ export default {
   'select-torrent': 'Torrent dosyasını sürükleyin ya da seçmek için tıklayın',
   'task-info-dialog-title': '{{title}} hakkında bilgiler',
   'download-start-message': '{{taskName}} görevi başlatıldı',
+  'download-start-browser-message': 'Tarayıcıdan gelen indirme alındı',
   'download-pause-message': '{{taskName}} görevi duraklatıldı',
   'download-stop-message': '{{taskName}} görevi durduruldu',
   'download-error-message': '{{taskName}} görevinde hata oluştu',

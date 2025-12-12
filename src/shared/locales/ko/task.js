@@ -107,6 +107,7 @@ export default {
   'task-detail-title': '작업 정보',
   'task-info-dialog-title': '{{title}} 정보',
   'download-start-message': '{{taskName}} 다운로드 시작',
+  'download-start-browser-message': '브라우저에서 온 다운로드를 받았습니다',
   'download-pause-message': '{{taskName}} 다운로드 일시정지',
   'download-stop-message': '{{taskName}} 다운로드 중지',
   'download-error-message': '{{taskName}} 다운로드 오류 발생',

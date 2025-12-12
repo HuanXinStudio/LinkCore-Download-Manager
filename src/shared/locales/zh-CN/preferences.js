@@ -170,4 +170,11 @@ export default {
   'shortcut-keystroke': '按键组合',
   'shortcut-placeholder': '在此按下新的快捷键',
   'shortcut-reset-default': '恢复默认快捷键'
+  ,
+  'extension-rpc': '当前扩展使用的 RPC 地址',
+  'extension-copy-rpc': '复制 RPC 地址',
+  'extension-tips': '安装并启用浏览器扩展后，可自动接管浏览器下载'
+  ,
+  'extension-channel': '扩展通道地址（应用 HTTP）',
+  'extension-copy-channel': '复制通道地址'
 }
