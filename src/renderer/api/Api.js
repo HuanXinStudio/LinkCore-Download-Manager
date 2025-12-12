@@ -10,7 +10,8 @@ import {
   changeKeysToCamelCase,
   changeKeysToKebabCase
 } from '@shared/utils'
-import { ENGINE_RPC_HOST } from '@shared/constants'
+import { ENGINE_RPC_HOST, TASK_STATUS } from '@shared/constants'
+import taskHistory from './TaskHistory'
 
 export default class Api {
   constructor (options = {}) {
@@ -246,7 +247,7 @@ export default class Api {
   }
 
   fetchStoppedTaskList (params = {}) {
-    const { offset = 0, num = 20, keys } = params
+    const { offset = 0, num = 10000, keys } = params
     const args = compactUndefined([offset, num, keys])
     return this.client.call('tellStopped', ...args)
   }
@@ -261,17 +262,49 @@ export default class Api {
     const { type } = params
     switch (type) {
     case 'all': {
-      const { offset = 0, num = 20, keys } = params
+      const { offset = 0, keys } = params
       const activeArgs = compactUndefined([keys])
-      const waitingArgs = compactUndefined([offset, num, keys])
-      const stoppedArgs = compactUndefined([offset, num, keys])
+      const waitingArgs = compactUndefined([offset, 1000, keys])
+      const stoppedArgs = compactUndefined([offset, 10000, keys])
       return new Promise((resolve, reject) => {
         this.client.multicall([
           ['aria2.tellActive', ...activeArgs],
           ['aria2.tellWaiting', ...waitingArgs],
           ['aria2.tellStopped', ...stoppedArgs]
         ]).then((data) => {
-          const result = mergeTaskResult(data)
+          let result = mergeTaskResult(data)
+
+          // 保存已停止的任务到历史记录
+          const stoppedTasks = result.filter(task => {
+            const { status } = task
+            // 检查是否为种子解析任务（名称以[METADATA]开头）
+            const isMetadataTask = task.name && task.name.startsWith('[METADATA]')
+            return isMetadataTask || [TASK_STATUS.COMPLETE, TASK_STATUS.ERROR, TASK_STATUS.REMOVED].includes(status)
+          })
+          taskHistory.saveStoppedTasks(stoppedTasks)
+
+          // 获取历史记录并合并到结果中
+          const historyTasks = taskHistory.getHistory()
+          if (historyTasks.length > 0) {
+            // 合并历史任务，避免重复
+            const currentGids = new Set(result.map(task => task.gid))
+            const newHistoryTasks = historyTasks.filter(task => !currentGids.has(task.gid))
+
+            // 为从aria2获取的已停止任务添加savedAt时间戳
+            const historyMap = new Map(historyTasks.map(task => [task.gid, task]))
+            result = result.map(task => {
+              if ([TASK_STATUS.COMPLETE, TASK_STATUS.ERROR, TASK_STATUS.REMOVED].includes(task.status)) {
+                const historyTask = historyMap.get(task.gid)
+                if (historyTask && historyTask.savedAt) {
+                  return { ...task, savedAt: historyTask.savedAt }
+                }
+              }
+              return task
+            })
+
+            result = [...result, ...newHistoryTasks]
+          }
+
           resolve(result)
         }).catch((err) => {
           console.log('[Motrix] fetch all task list fail:', err)
@@ -285,6 +318,41 @@ export default class Api {
       return this.fetchWaitingTaskList(params)
     case 'stopped':
       return this.fetchStoppedTaskList(params)
+        .then(stoppedTasks => {
+          // 获取历史记录中的任务
+          const historyTasks = taskHistory.getHistory()
+
+          // 如果没有从Aria2获取到已停止的任务，直接返回历史记录
+          if (stoppedTasks.length === 0) {
+            return historyTasks
+          }
+
+          // 保存从Aria2获取到的已停止任务到历史记录
+          taskHistory.saveStoppedTasks(stoppedTasks)
+
+          // 合并Aria2任务和历史记录任务，避免重复
+          const currentGids = new Set(stoppedTasks.map(task => task.gid))
+          const newHistoryTasks = historyTasks.filter(task => !currentGids.has(task.gid))
+
+          // 为从aria2获取的已停止任务添加savedAt时间戳
+          const updatedHistoryTasks = taskHistory.getHistory()
+          const historyMap = new Map(updatedHistoryTasks.map(task => [task.gid, task]))
+          stoppedTasks = stoppedTasks.map(task => {
+            const historyTask = historyMap.get(task.gid)
+            if (historyTask && historyTask.savedAt) {
+              return { ...task, savedAt: historyTask.savedAt }
+            }
+            return task
+          })
+
+          // 返回合并后的任务列表
+          return [...stoppedTasks, ...newHistoryTasks]
+        })
+        .catch(err => {
+          console.log('[Motrix] fetch stopped task list fail, fallback to history:', err)
+          // 如果获取已停止任务失败，从历史记录中恢复
+          return taskHistory.getHistory()
+        })
     default:
       return this.fetchDownloadingTaskList(params)
     }
@@ -294,6 +362,11 @@ export default class Api {
     const { gid, keys } = params
     const args = compactUndefined([gid, keys])
     return this.client.call('tellStatus', ...args)
+      .catch((error) => {
+        console.log('[Motrix] fetchTaskItem fail:', error.message)
+        // 返回一个空对象或者重新抛出错误，让上层调用者处理
+        return Promise.reject(error)
+      })
   }
 
   fetchTaskItemWithPeers (params = {}) {
@@ -314,7 +387,7 @@ export default class Api {
 
         resolve(result)
       }).catch((err) => {
-        console.log('[Motrix] fetch downloading task list fail:', err)
+        console.log('[Motrix] fetchTaskItemWithPeers fail:', err.message)
         reject(err)
       })
     })
@@ -374,12 +447,25 @@ export default class Api {
 
   purgeTaskRecord (params = {}) {
     return this.client.call('purgeDownloadResult')
+      .then(() => {
+        // 清空任务历史记录
+        taskHistory.clearHistory()
+      })
   }
 
   removeTaskRecord (params = {}) {
     const { gid } = params
     const args = compactUndefined([gid])
+
+    // 先从历史记录中移除任务，确保任务卡片会消失
+    taskHistory.removeTask(gid)
+
+    // 然后尝试从Aria2中删除任务记录，如果失败则忽略
     return this.client.call('removeDownloadResult', ...args)
+      .catch((err) => {
+        console.log('[Motrix] removeTaskRecord from aria2 fail:', err)
+        // 忽略Aria2删除失败的错误，因为任务可能已经不在Aria2中了
+      })
   }
 
   multicall (method, params = {}) {

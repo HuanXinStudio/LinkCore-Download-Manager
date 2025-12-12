@@ -168,7 +168,14 @@ export default {
   'shortcut-keystroke': 'Keystroke',
   'shortcut-placeholder': 'Press new shortcut here',
   'shortcut-reset-default': 'Reset to defaults',
-  'shortcut-duplicate-message': 'Shortcut {{keystroke}} is already used by command "{{command}}". Please choose a different shortcut'
+  'shortcut-duplicate-message': 'Shortcut {{keystroke}} is already used by command "{{command}}". Please choose a different shortcut',
+  'engine-mode-unified': 'Unified Engine Mode',
+  'engine-mode-separate': 'Separate Engine Mode',
+  'engine-normal-tasks': 'Normal Tasks Engine',
+  'engine-bt-tasks': 'BT Tasks Engine',
+  'engine-info-details': 'Engine Details',
+  'engine-normal-info': 'Normal Tasks Engine Info',
+  'engine-bt-info': 'BT Tasks Engine Info'
   ,
   'extension-rpc': 'RPC URL used by the extension',
   'extension-copy-rpc': 'Copy RPC URL',

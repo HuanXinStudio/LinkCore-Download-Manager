@@ -356,6 +356,11 @@
                 {{ $t('preferences.no-confirm-before-delete-task') }}
               </el-checkbox>
             </el-col>
+            <el-col class="form-item-sub" :span="24">
+              <el-checkbox v-model="form.autoPurgeRecord" @change="autoSaveForm">
+                {{ $t('preferences.auto-purge-record') }}
+              </el-checkbox>
+            </el-col>
           </el-form-item>
         </div>
 
@@ -504,6 +509,7 @@
   const initForm = (config) => {
     const {
       autoHideWindow,
+      autoPurgeRecord,
       btForceEncryption,
       btSaveMetadata,
       dir,
@@ -543,6 +549,7 @@
 
     const result = {
       autoHideWindow,
+      autoPurgeRecord: autoPurgeRecord || false,
       btAutoDownloadContent,
       btForceEncryption,
       btSaveMetadata,

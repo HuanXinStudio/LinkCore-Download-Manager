@@ -16,6 +16,9 @@
         <span class="task-detail-hint__text">{{ magnetHintText }}</span>
       </el-tooltip>
     </div>
+    <div v-if="isCompleted" class="task-detail-completion-time">
+      <span class="task-detail-completion-time__text">{{ $t('task.completed-at') }} {{ completionTime }}</span>
+    </div>
     <el-tabs
       tab-position="top"
       class="task-detail-tab"
@@ -206,7 +209,13 @@
         const task = this.task || {}
         const zero = Number(task.downloadSpeed) === 0
         const isMagnet = isMagnetTask(task)
-        if (!(isMagnet && zero)) return ''
+
+        // 检查任务是否已经完成解析（元数据已准备好）
+        const metadataReady = task.totalLength > 0 && task.files && task.files.length > 0
+
+        // 如果不是磁力链接、下载速度不为零、或者元数据已准备好，都不显示提示
+        if (!(isMagnet && zero && !metadataReady)) return ''
+
         const s = this.magnetStatuses[task.gid]
         if (!s) return this.$t('task.magnet-fetching-metadata')
         const { peerCount = 0, trackerCount = 0, elapsedSec = 0, phase = '', peerTrend = 'flat', globalLimitLow = false, pauseMetadata = false } = s
@@ -273,6 +282,17 @@
         const result = fileList.filter((item) => item.selected)
 
         return result
+      },
+      isCompleted () {
+        if (!this.task) return false
+        const completedStatuses = ['complete', 'error', 'removed']
+        return completedStatuses.includes(this.task.status)
+      },
+      completionTime () {
+        // 使用任务保存时间作为完成时间，如果没有保存时间则使用当前时间
+        if (!this.task) return ''
+        const timestamp = this.task.savedAt || Date.now()
+        return new Date(timestamp).toLocaleString()
       }
     },
     mounted () {
@@ -400,6 +420,18 @@
     padding: 0.25rem 1.25rem 0.5rem;
     color: #9B9B9B;
     .task-detail-hint__text {
+      display: inline-block;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+  .task-detail-completion-time {
+    padding: 0.25rem 1.25rem 0.5rem;
+    color: #9B9B9B;
+    font-size: 0.875rem;
+    .task-detail-completion-time__text {
       display: inline-block;
       max-width: 100%;
       white-space: nowrap;

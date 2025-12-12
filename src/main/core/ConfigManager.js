@@ -103,6 +103,7 @@ export default class ConfigManager {
       defaults: {
         'auto-check-update': is.macOS(),
         'auto-hide-window': false,
+        'auto-purge-record': false,
         'auto-sync-tracker': true,
         'downloading-file-suffix': '',
         'set-file-mtime-on-complete': false,

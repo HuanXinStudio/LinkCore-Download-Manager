@@ -30,6 +30,11 @@
         <mo-task-status :theme="currentTheme" :status="taskStatus" />
       </div>
     </el-form-item>
+    <el-form-item :label="`${$t('task.completed-at')}: `" v-if="isCompleted">
+      <div class="form-static-value">
+        {{ completionTime }}
+      </div>
+    </el-form-item>
     <el-form-item :label="`${$t('task.task-priority')}: `">
       <div class="form-static-value">
         {{ taskPriority }}
@@ -174,6 +179,15 @@
         const gid = this.task && this.task.gid
         const map = this.$store.state.task.taskPriorities || {}
         return (gid && map[gid]) ? Number(map[gid]) : 0
+      },
+      isCompleted () {
+        const completedStatuses = ['complete', 'error', 'removed']
+        return completedStatuses.includes(this.task.status)
+      },
+      completionTime () {
+        // 使用任务保存时间作为完成时间，如果没有保存时间则使用当前时间
+        const timestamp = this.task.savedAt || Date.now()
+        return new Date(timestamp).toLocaleString()
       }
     },
     filters: {

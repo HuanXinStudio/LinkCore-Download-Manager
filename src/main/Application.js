@@ -5,6 +5,7 @@ import { app, shell, dialog, ipcMain } from 'electron'
 import { createServer } from 'node:http'
 import is from 'electron-is'
 import { isEmpty, isEqual } from 'lodash'
+import Store from 'electron-store'
 
 import {
   APP_RUN_MODE,
@@ -736,6 +737,85 @@ export default class Application extends EventEmitter {
   }
 
   async quit () {
+    // Check if auto-purge-record is enabled and purge records before quitting
+    const autoPurgeRecord = this.configManager.getUserConfig('auto-purge-record', false)
+    if (autoPurgeRecord) {
+      try {
+        logger.info('[Motrix] Auto-purging download records before quit')
+        // 清除 aria2 引擎中的下载记录
+        await this.engineClient.call('purgeDownloadResult')
+
+        // 清除本地存储的历史记录
+        const Store = require('electron-store')
+        const taskHistoryStore = new Store({
+          name: 'taskHistory',
+          cwd: process.env.NODE_ENV === 'development' ? './dev-config' : undefined
+        })
+        taskHistoryStore.set('tasks', [])
+        logger.info('[Motrix] Download records purged successfully')
+      } catch (error) {
+        logger.warn('[Motrix] Failed to purge download records:', error.message)
+      }
+    } else {
+      // 如果未启用自动清除，则在退出前保存所有任务到历史记录
+      try {
+        logger.info('[Motrix] Saving all tasks to history before quit')
+        // 获取所有任务（包括活跃、等待和已停止的任务）
+        const allTasks = await this.engineClient.call('tellActive')
+          .then(activeTasks => {
+            return this.engineClient.call('tellWaiting', 0, 1000)
+              .then(waitingTasks => {
+                return this.engineClient.call('tellStopped', 0, 10000)
+                  .then(stoppedTasks => {
+                    return [...activeTasks, ...waitingTasks, ...stoppedTasks]
+                  })
+              })
+          })
+          .catch(error => {
+            logger.warn('[Motrix] Failed to fetch all tasks before quit:', error.message)
+            return []
+          })
+
+        if (allTasks.length > 0) {
+          // 保存任务到历史记录
+          const taskHistoryStore = new Store({
+            name: 'taskHistory',
+            cwd: process.env.NODE_ENV === 'development' ? './dev-config' : undefined
+          })
+
+          const currentHistory = taskHistoryStore.get('tasks', [])
+          const currentGids = new Set(currentHistory.map(task => task.gid))
+
+          // 过滤需要保存的任务（包括磁力链接任务）
+          const tasksToSave = allTasks.filter(task => {
+            const { status, bittorrent } = task
+            // 检查是否为磁力链接任务
+            const isMagnetTask = bittorrent && !bittorrent.info
+            // 检查是否为种子解析任务
+            const isMetadataTask = task.name && task.name.startsWith('[METADATA]')
+            // 保存磁力链接任务、种子解析任务和已停止状态的任务
+            return isMagnetTask || isMetadataTask || ['complete', 'error', 'removed'].includes(status)
+          })
+
+          // 添加新任务到历史记录
+          const updatedHistory = [...currentHistory]
+          tasksToSave.forEach(task => {
+            if (!currentGids.has(task.gid)) {
+              updatedHistory.push({
+                ...task,
+                savedAt: Date.now()
+              })
+            }
+          })
+
+          taskHistoryStore.set('tasks', updatedHistory)
+          logger.info(`[Motrix] Saved ${tasksToSave.length} tasks to history before quit`)
+        }
+      } catch (error) {
+        logger.warn('[Motrix] Failed to save tasks to history before quit:', error.message)
+      }
+    }
+
     await this.stopAllSettled()
     app.exit()
   }

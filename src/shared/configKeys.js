@@ -1,6 +1,7 @@
 const userKeys = [
   'auto-check-update',
   'auto-hide-window',
+  'auto-purge-record',
   'auto-sync-tracker',
   'cookie',
   'enable-upnp',

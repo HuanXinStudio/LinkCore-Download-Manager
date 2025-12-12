@@ -18,13 +18,12 @@
     </el-col>
     <el-col
       class="task-progress-info-right"
-      v-if="isActive"
       :xs="12"
       :sm="17"
       :md="18"
       :lg="18"
     >
-      <div class="task-speed-info">
+      <div class="task-speed-info" v-if="isActive">
         <div class="task-speed-text" v-if="isBT">
           <i><mo-icon name="arrow-up" width="10" height="14" /></i>
           <span>{{ task.uploadSpeed | bytesToSize }}/s</span>
@@ -59,6 +58,9 @@
         <div class="task-speed-text" v-if="taskPriority > 0">
           <span>{{ $t('task.priority-short') }} {{ taskPriority }}</span>
         </div>
+      </div>
+      <div class="task-completion-time" v-else-if="isCompleted">
+        <span>{{ $t('task.completed-at') }} {{ completionTime }}</span>
       </div>
     </el-col>
   </el-row>
@@ -99,6 +101,9 @@
       isActive () {
         return this.task.status === TASK_STATUS.ACTIVE
       },
+      isCompleted () {
+        return [TASK_STATUS.COMPLETE, TASK_STATUS.ERROR, TASK_STATUS.REMOVED].includes(this.task.status)
+      },
       isBT () {
         return checkTaskIsBT(this.task)
       },
@@ -108,6 +113,12 @@
       remaining () {
         const { totalLength, completedLength, downloadSpeed } = this.task
         return timeRemaining(totalLength, completedLength, downloadSpeed)
+      },
+      completionTime () {
+        // 使用任务保存时间作为完成时间，如果没有保存时间则使用当前时间
+        const timestamp = this.task.savedAt || Date.now()
+        const date = new Date(timestamp)
+        return date.toLocaleString()
       },
       magnetHintText () {
         const zero = Number(this.task.downloadSpeed) === 0
@@ -120,14 +131,14 @@
         const dhtEnabled = Number(cfg['dht-listen-port'] || cfg.dhtListenPort || 0) > 0
         const trackersConfigured = `${cfg['bt-tracker'] || cfg.btTracker || ''}`.trim().length > 0
         const elapsedMin = Math.floor(elapsedSec / 60)
-        
+
         // 检查磁力解析是否完成（元数据已准备好）
         const metadataReady = this.task.totalLength > 0 && this.task.files && this.task.files.length > 0
         if (metadataReady) {
           // 元数据已准备好，但下载速度为0，可能是暂停状态
           return ''
         }
-        
+
         if (phase === 'no_trackers' || (peerCount === 0 && trackerCount === 0)) {
           const base = trackersConfigured ? this.$t('task.magnet-status-contacting-trackers', { trackerCount }) : this.$t('task.magnet-status-no-trackers')
           const suggest = this.$t('task.magnet-suggest-add-trackers')
@@ -214,6 +225,13 @@
     }
   }
 }
+.task-completion-time {
+  font-size: 0.75rem;
+  line-height: 0.875rem;
+  color: #9B9B9B;
+  text-align: right;
+  min-height: 0.875rem;
+}
 .task-magnet-hint {
   font-size: 0.75rem;
   line-height: 0.875rem;
@@ -230,4 +248,3 @@
   margin-top: 4px;
 }
 </style>
-

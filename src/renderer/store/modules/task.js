@@ -125,12 +125,44 @@ const actions = {
         dispatch('updateCurrentTaskItem', data)
       })
   },
-  showTaskDetailByGid ({ commit, dispatch }, gid) {
-    api.fetchTaskItem({ gid })
-      .then((task) => {
-        dispatch('updateCurrentTaskItem', task)
-        commit('UPDATE_CURRENT_TASK_GID', task.gid)
-        commit('CHANGE_TASK_DETAIL_VISIBLE', true)
+  showTaskDetailByGid ({ commit, dispatch, state }, gid) {
+    // 首先尝试从本地任务列表中查找任务
+    const localTask = state.taskList.find(task => task.gid === gid)
+    if (localTask) {
+      // 对于本地任务列表中的任务，直接使用本地数据，不再调用 API
+      // 这包括历史记录任务，它们已经在本地任务列表中
+      dispatch('updateCurrentTaskItem', localTask)
+      commit('UPDATE_CURRENT_TASK_GID', localTask.gid)
+      commit('CHANGE_TASK_DETAIL_VISIBLE', true)
+      return
+    }
+
+    // 如果本地任务列表中没有，尝试从历史记录中获取
+    return api.fetchStoppedTaskList()
+      .then((stoppedTasks) => {
+        const historyTask = stoppedTasks.find(task => task.gid === gid)
+        if (historyTask) {
+          dispatch('updateCurrentTaskItem', historyTask)
+          commit('UPDATE_CURRENT_TASK_GID', historyTask.gid)
+          commit('CHANGE_TASK_DETAIL_VISIBLE', true)
+        } else {
+          // 只有在本地和历史记录中都找不到任务时，才尝试从 aria2 引擎获取
+          console.log('[Motrix] Task not found in local list or history, try to get from engine:', gid)
+          return api.fetchTaskItem({ gid })
+            .then((task) => {
+              dispatch('updateCurrentTaskItem', task)
+              commit('UPDATE_CURRENT_TASK_GID', task.gid)
+              commit('CHANGE_TASK_DETAIL_VISIBLE', true)
+            })
+            .catch((error) => {
+              console.error('[Motrix] Task not found in engine:', error.message)
+              // 可以添加一个错误提示给用户
+            })
+        }
+      })
+      .catch((err) => {
+        console.error('[Motrix] fetch stopped task list fail:', err)
+        // 可以添加一个错误提示给用户
       })
   },
   showTaskDetail ({ commit, dispatch }, task) {
@@ -337,11 +369,20 @@ const actions = {
     }
 
     const { ERROR, COMPLETE, REMOVED } = TASK_STATUS
-    if ([ERROR, COMPLETE, REMOVED].indexOf(status) === -1) {
+    const validStatus = status || REMOVED // 确保状态有效
+    if ([ERROR, COMPLETE, REMOVED].indexOf(validStatus) === -1) {
       return
     }
+
+    // 尝试从Aria2中删除任务记录，如果失败则忽略，因为任务可能已经不在Aria2中
     return api.removeTaskRecord({ gid })
-      .finally(() => dispatch('fetchList'))
+      .catch((err) => {
+        console.log('[Motrix] removeTaskRecord from aria2 fail:', err)
+        // 忽略Aria2删除失败的错误，继续执行
+      })
+      .finally(() => {
+        dispatch('fetchList')
+      })
   },
   saveSession () {
     api.saveSession()

@@ -417,10 +417,19 @@
         })
 
         if (this.taskDetailVisible && this.currentTaskGid) {
-          if (this.currentTaskIsBT && this.enabledFetchPeers) {
-            this.$store.dispatch('task/fetchItemWithPeers', this.currentTaskGid)
-          } else {
-            this.$store.dispatch('task/fetchItem', this.currentTaskGid)
+          // 只对活跃任务调用 fetchItemWithPeers 或 fetchItem，避免对历史记录任务调用 aria2 API
+          // 通过检查任务状态来判断是否为活跃任务
+          const task = this.$store.state.task.currentTaskItem
+          if (task) {
+            // 检查任务状态，如果是已完成、已失败或已移除状态，不调用 API
+            const activeStatuses = ['active', 'waiting', 'paused']
+            if (activeStatuses.includes(task.status)) {
+              if (this.currentTaskIsBT && this.enabledFetchPeers) {
+                this.$store.dispatch('task/fetchItemWithPeers', this.currentTaskGid)
+              } else {
+                this.$store.dispatch('task/fetchItem', this.currentTaskGid)
+              }
+            }
           }
         }
       },
