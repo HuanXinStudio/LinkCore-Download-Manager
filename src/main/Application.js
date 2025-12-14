@@ -16,7 +16,7 @@ import {
   APP_HTTP_PORT,
   ADD_TASK_TYPE
 } from '@shared/constants'
-import { checkIsNeedRunAdvanced } from '@shared/utils'
+import { checkIsNeedRunAdvanced, removeExtensionDot } from '@shared/utils'
 import {
   convertTrackerDataToComma,
   fetchBtTrackerFromSource,
@@ -239,7 +239,8 @@ export default class Application extends EventEmitter {
               const authorization = headerMap.authorization
               const taskPayload = {
                 type: ADD_TASK_TYPE.URI,
-                uri: url
+                uri: url,
+                fromBrowserExtension: true
               }
               if (options.referer) {
                 taskPayload.referer = options.referer
@@ -282,9 +283,11 @@ export default class Application extends EventEmitter {
             const skipRaw = this.configManager.getUserConfig('extension-skip-file-extensions', '')
             let skipFileExtensions = []
             if (typeof skipRaw === 'string') {
-              skipFileExtensions = skipRaw.split(/[,;\n]/).map(x => x.trim().toLowerCase()).filter(Boolean)
+              const normalizeSkipExt = (x) => removeExtensionDot(`${x}`.trim().toLowerCase())
+              skipFileExtensions = skipRaw.split(/[,;\n]/).map(normalizeSkipExt).filter(Boolean)
             } else if (Array.isArray(skipRaw)) {
-              skipFileExtensions = skipRaw.map(x => `${x}`.trim().toLowerCase()).filter(Boolean)
+              const normalizeSkipExt = (x) => removeExtensionDot(`${x}`.trim().toLowerCase())
+              skipFileExtensions = skipRaw.map(normalizeSkipExt).filter(Boolean)
             }
             res.writeHead(200, { 'Content-Type': 'application/json' })
             res.end(JSON.stringify({

@@ -56,7 +56,7 @@ export const initTaskForm = state => {
 }
 
 export const buildHeader = (form, uris = []) => {
-  const { userAgent, referer, cookie, authorization } = form
+  const { userAgent, referer, cookie, authorization, fromBrowserExtension } = form
   const result = []
 
   // 用户设置的请求头始终优先，自动推断的请求头不会覆盖用户设置
@@ -81,6 +81,10 @@ export const buildHeader = (form, uris = []) => {
   }
   if (!isEmpty(authorization)) {
     result.push(`Authorization: ${authorization}`)
+  }
+
+  if (fromBrowserExtension) {
+    result.push('X-LinkCore-Source: BrowserExtension')
   }
 
   return result
