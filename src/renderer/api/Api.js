@@ -483,7 +483,36 @@ export default class Api {
   }
 
   batchRemoveTask (params = {}) {
+    const { gids } = params
+
+    if (Array.isArray(gids) && gids.length > 0) {
+      gids.forEach(gid => {
+        if (gid) {
+          taskHistory.removeTask(gid)
+        }
+      })
+    }
+
     return this.multicall('aria2.remove', params)
+      .then(() => {
+        if (!Array.isArray(gids) || gids.length === 0) {
+          return
+        }
+
+        const calls = gids.map(gid => {
+          if (!gid) {
+            return Promise.resolve()
+          }
+
+          const args = compactUndefined([gid])
+          return this.client.call('removeDownloadResult', ...args)
+            .catch((err) => {
+              console.log('[Motrix] batchRemoveTask removeDownloadResult fail:', err)
+            })
+        })
+
+        return Promise.all(calls)
+      })
   }
 
   batchResumeTask (params = {}) {

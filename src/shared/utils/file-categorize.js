@@ -115,6 +115,8 @@ export const autoCategorizeDownloadedFile = (filePath, baseDir, categories = DEF
   const filename = basename(filePath)
   const categorizedInfo = buildCategorizedPath(filePath, filename, categories, baseDir)
 
+  createCategoryDirectory(categorizedInfo.categorizedDir)
+
   // 如果文件已经在分类文件夹中，不需要移动
   if (dirname(filePath) === dirname(categorizedInfo.categorizedPath)) {
     console.log(`[Motrix] File already in category folder: ${filePath}`)

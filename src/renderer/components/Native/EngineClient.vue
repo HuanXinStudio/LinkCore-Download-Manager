@@ -13,7 +13,7 @@
 
   import { checkTaskIsBT, getTaskName, isMagnetTask } from '@shared/utils'
   import { existsSync, renameSync, mkdirSync, utimesSync, statSync } from 'node:fs'
-  import { dirname } from 'path'
+  import { dirname, basename } from 'path'
   import { autoCategorizeDownloadedFile } from '@shared/utils/file-categorize'
 
   export default {
@@ -209,9 +209,9 @@
         this.showTaskCompleteNotify(task, isBT, path)
         this.$electron.ipcRenderer.send('event', 'task-download-complete', task, path)
 
-        this.autoCategorizeDownloadedFile(task)
-
         this.setFileMtimeOnComplete(task)
+
+        this.autoCategorizeDownloadedFile(task)
       },
       ensureTargetDirectoryExists (task) {
         // 获取任务完整路径
@@ -317,12 +317,25 @@
         }
 
         try {
-          // 获取下载目录作为基础目录
           const baseDir = dirname(filePath)
-          // 获取分类配置
           const categories = this.$store.state.preference.config.fileCategories
 
-          // 调用自动分类功能
+          if (!categories || Object.keys(categories).length === 0) {
+            console.log('[Motrix] No file categories configured, skip auto categorize')
+            return
+          }
+
+          const dirName = basename(baseDir)
+          const categoryNames = Object.keys(categories).map(key => {
+            const categoryConfig = categories[key] || {}
+            return categoryConfig.name || key
+          })
+
+          if (categoryNames.includes(dirName)) {
+            console.log(`[Motrix] File already in category directory: ${filePath}`)
+            return
+          }
+
           const result = autoCategorizeDownloadedFile(filePath, baseDir, categories)
           if (result) {
             console.log(`[Motrix] File categorized successfully: ${filePath}`)

@@ -1,5 +1,5 @@
 import { access, constants, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, basename, dirname } from 'node:path'
 import { shell, nativeTheme } from '@electron/remote'
 import { Message } from 'element-ui'
 
@@ -7,6 +7,7 @@ import {
   getFileNameFromFile,
   isMagnetTask
 } from '@shared/utils'
+import { buildCategorizedPath } from '@shared/utils/file-categorize'
 import { APP_THEME, TASK_STATUS } from '@shared/constants'
 
 export const showItemInFolder = (fullPath, { errorMsg }) => {
@@ -67,7 +68,7 @@ export const getTaskFullPath = (task) => {
   return result
 }
 
-export const moveTaskFilesToTrash = async (task, downloadingFileSuffix = '') => {
+export const moveTaskFilesToTrash = async (task, downloadingFileSuffix = '', preferenceConfig = {}) => {
   /**
    * For magnet link tasks, there is bittorrent, but there is no bittorrent.info.
    * The path is not a complete path before it becomes a BT task.
@@ -84,16 +85,37 @@ export const moveTaskFilesToTrash = async (task, downloadingFileSuffix = '') => 
     throw new Error('task.file-path-error')
   }
 
-  // 尝试删除原始路径文件
+  let deleted = false
+
   if (existsSync(path)) {
     console.log(`[Motrix] ${path} exists, deleting...`)
     await shell.trashItem(path)
+    deleted = true
   } else if (downloadingFileSuffix) {
-    // 如果原始路径文件不存在，尝试删除带有自定义后缀的文件
     const suffixedPath = `${path}${downloadingFileSuffix}`
     if (existsSync(suffixedPath)) {
       console.log(`[Motrix] ${suffixedPath} exists, deleting...`)
       await shell.trashItem(suffixedPath)
+      deleted = true
+    }
+  }
+
+  if (!deleted) {
+    const config = preferenceConfig || {}
+    const autoCategorizeFiles = config.autoCategorizeFiles
+    const categories = config.fileCategories
+
+    if (autoCategorizeFiles && categories && Object.keys(categories).length > 0) {
+      const filename = basename(path)
+      const baseDir = dirname(path)
+      const categorizedInfo = buildCategorizedPath(path, filename, categories, baseDir)
+      const categorizedPath = categorizedInfo.categorizedPath
+
+      if (existsSync(categorizedPath)) {
+        console.log(`[Motrix] ${categorizedPath} exists, deleting...`)
+        await shell.trashItem(categorizedPath)
+        deleted = true
+      }
     }
   }
 
@@ -129,11 +151,11 @@ export const getSystemTheme = () => {
   return nativeTheme.shouldUseDarkColors ? APP_THEME.DARK : APP_THEME.LIGHT
 }
 
-export const delayDeleteTaskFiles = (task, delay, downloadingFileSuffix = '') => {
+export const delayDeleteTaskFiles = (task, delay, downloadingFileSuffix = '', preferenceConfig = {}) => {
   return new Promise((resolve, reject) => {
     setTimeout(async () => {
       try {
-        const result = await moveTaskFilesToTrash(task, downloadingFileSuffix)
+        const result = await moveTaskFilesToTrash(task, downloadingFileSuffix, preferenceConfig)
         resolve(result)
       } catch (err) {
         reject(err.message)

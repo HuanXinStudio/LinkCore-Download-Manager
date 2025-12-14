@@ -73,7 +73,11 @@ const addTaskByType = (type) => {
 
   let payload = null
   if (type === ADD_TASK_TYPE.URI) {
-    payload = buildUriPayload(form)
+    const config = store.state.preference.config || {}
+    const autoCategorizeFiles = config.autoCategorizeFiles || false
+    const fileCategories = config.fileCategories || null
+
+    payload = buildUriPayload(form, autoCategorizeFiles, fileCategories)
     store.dispatch('task/addUri', payload).catch(err => {
       Message.error(err.message)
     })

@@ -215,46 +215,46 @@ export default class Application extends EventEmitter {
 
               const silentDownload = !!this.configManager.getUserConfig('extension-silent-download', false)
 
+              const headerMap = {}
+              finalHeaders.forEach((h) => {
+                if (typeof h !== 'string') {
+                  return
+                }
+                const idx = h.indexOf(':')
+                if (idx <= 0) {
+                  return
+                }
+                const name = h.slice(0, idx).trim().toLowerCase()
+                const value = h.slice(idx + 1).trim()
+                if (!name) {
+                  return
+                }
+                if (!headerMap[name]) {
+                  headerMap[name] = value
+                }
+              })
+
+              const userAgent = headerMap['user-agent']
+              const cookie = headerMap.cookie
+              const authorization = headerMap.authorization
+              const taskPayload = {
+                type: ADD_TASK_TYPE.URI,
+                uri: url
+              }
+              if (options.referer) {
+                taskPayload.referer = options.referer
+              }
+              if (userAgent) {
+                taskPayload.userAgent = userAgent
+              }
+              if (cookie) {
+                taskPayload.cookie = cookie
+              }
+              if (authorization) {
+                taskPayload.authorization = authorization
+              }
+
               if (!silentDownload) {
-                const headerMap = {}
-                finalHeaders.forEach((h) => {
-                  if (typeof h !== 'string') {
-                    return
-                  }
-                  const idx = h.indexOf(':')
-                  if (idx <= 0) {
-                    return
-                  }
-                  const name = h.slice(0, idx).trim().toLowerCase()
-                  const value = h.slice(idx + 1).trim()
-                  if (!name) {
-                    return
-                  }
-                  if (!headerMap[name]) {
-                    headerMap[name] = value
-                  }
-                })
-
-                const userAgent = headerMap['user-agent']
-                const cookie = headerMap.cookie
-                const authorization = headerMap.authorization
-                const taskPayload = {
-                  type: ADD_TASK_TYPE.URI,
-                  uri: url
-                }
-                if (options.referer) {
-                  taskPayload.referer = options.referer
-                }
-                if (userAgent) {
-                  taskPayload.userAgent = userAgent
-                }
-                if (cookie) {
-                  taskPayload.cookie = cookie
-                }
-                if (authorization) {
-                  taskPayload.authorization = authorization
-                }
-
                 this.show()
                 global.application.sendCommandToAll('application:new-task', taskPayload)
                 res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -262,14 +262,10 @@ export default class Application extends EventEmitter {
                 return
               }
 
-              const result = await this.engineClient.call('addUri', [url], options)
-              if (result) {
-                res.writeHead(200, { 'Content-Type': 'application/json' })
-                res.end(JSON.stringify({ ok: true, gid: result }))
-              } else {
-                res.writeHead(500, { 'Content-Type': 'application/json' })
-                res.end(JSON.stringify({ ok: false }))
-              }
+              taskPayload.silent = true
+              global.application.sendCommandToAll('application:new-task', taskPayload)
+              res.writeHead(200, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ ok: true, dialog: false }))
             } catch (err) {
               res.writeHead(500, { 'Content-Type': 'application/json' })
               res.end(JSON.stringify({ ok: false }))

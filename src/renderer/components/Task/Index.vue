@@ -218,8 +218,11 @@
       },
       batchDeleteTaskFiles (taskList) {
         // 获取下载中文件后缀配置
-        const downloadingFileSuffix = this.$store.state.preference.config.downloadingFileSuffix || ''
-        const promises = taskList.map((task, index) => delayDeleteTaskFiles(task, index * 200, downloadingFileSuffix))
+        const config = this.$store.state.preference.config || {}
+        const downloadingFileSuffix = config.downloadingFileSuffix || ''
+        const promises = taskList.map((task, index) => {
+          return delayDeleteTaskFiles(task, index * 200, downloadingFileSuffix, config)
+        })
         Promise.allSettled(promises).then(results => {
           console.log('[Motrix] batch delete task files: ', results)
         })
