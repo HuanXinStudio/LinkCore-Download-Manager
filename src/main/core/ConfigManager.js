@@ -19,8 +19,7 @@ import {
   NGOSANG_TRACKERS_BEST_URL_CDN,
   PROXY_MODE,
   PROXY_SCOPES,
-  PROXY_SCOPE_OPTIONS,
-  SCHEDULER_CONFIG_DEFAULTS
+  PROXY_SCOPE_OPTIONS
 } from '@shared/constants'
 import { CHROME_UA } from '@shared/ua'
 import { separateConfig } from '@shared/utils'
@@ -68,7 +67,7 @@ export default class ConfigManager {
         'follow-metalink': true,
         'follow-torrent': true,
         'listen-port': 21301,
-        'max-concurrent-downloads': 5,
+        'max-concurrent-downloads': 10,
         'max-connection-per-server': getMaxConnectionPerServer(),
         'max-download-limit': 0,
         'max-overall-download-limit': 0,
@@ -107,6 +106,8 @@ export default class ConfigManager {
         'auto-hide-window': false,
         'auto-purge-record': false,
         'auto-sync-tracker': true,
+        'auto-sync-tracker-interval': 12,
+        'auto-sync-tracker-time': '00:00',
         'downloading-file-suffix': '',
         'set-file-mtime-on-complete': false,
         'advanced-option-presets': [],
@@ -128,14 +129,13 @@ export default class ConfigManager {
         'open-at-login': false,
         'protocols': { 'magnet': true, 'thunder': false },
         'proxy': {
-          'mode': PROXY_MODE.NONE,
+          'mode': PROXY_MODE.SYSTEM,
           'server': EMPTY_STRING,
           'bypass': EMPTY_STRING,
           'scope': PROXY_SCOPE_OPTIONS
         },
         'resume-all-when-app-launched': false,
         'run-mode': APP_RUN_MODE.STANDARD,
-        'scheduler': { ...SCHEDULER_CONFIG_DEFAULTS },
         'show-progress-bar': true,
         'task-notification': true,
         'theme': APP_THEME.AUTO,
@@ -162,7 +162,7 @@ export default class ConfigManager {
       })
     }
 
-    const proxy = this.getUserConfig('proxy', { mode: PROXY_MODE.NONE })
+    const proxy = this.getUserConfig('proxy', { mode: PROXY_MODE.SYSTEM })
     // 兼容旧版配置（enable 字段）
     let proxyMode = proxy.mode
     if (!proxyMode && proxy.enable !== undefined) {

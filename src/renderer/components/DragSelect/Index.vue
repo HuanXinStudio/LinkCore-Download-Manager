@@ -72,7 +72,7 @@
 
       function startDrag (e) {
         containerRect = container.getBoundingClientRect()
-        self.children = container.childNodes
+        self.children = container.querySelectorAll('[' + self.attribute + ']')
         start = getCoords(e, containerRect)
         end = start
         document.addEventListener('mousemove', drag)

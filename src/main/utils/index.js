@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import { access, constants, existsSync, lstatSync, readdirSync } from 'node:fs'
-import { app, nativeTheme, shell } from 'electron'
+import { app, nativeTheme, shell, session } from 'electron'
 import is from 'electron-is'
 
 import {
@@ -180,6 +180,34 @@ export const parseArgvAsFile = (argv) => {
 
 export const getMaxConnectionPerServer = () => {
   return ENGINE_MAX_CONNECTION_PER_SERVER
+}
+
+export const getSystemHttpProxy = async () => {
+  try {
+    if (!session || !session.defaultSession) {
+      return ''
+    }
+    const result = await session.defaultSession.resolveProxy('http://www.google.com')
+    if (!result) {
+      return ''
+    }
+    const parts = result.split(';').map(p => p.trim()).filter(Boolean)
+    const proxyPart = parts.find(p => /^PROXY\s+/i.test(p))
+    if (!proxyPart) {
+      return ''
+    }
+    const tokens = proxyPart.split(/\s+/)
+    const hostPort = tokens[1]
+    if (!hostPort) {
+      return ''
+    }
+    const url = `http://${hostPort}`
+    logger.info('[Motrix] detected system http proxy:', url, 'raw:', result)
+    return url
+  } catch (e) {
+    logger.warn('[Motrix] getSystemHttpProxy failed:', e.message)
+    return ''
+  }
 }
 
 export const getSystemTheme = () => {

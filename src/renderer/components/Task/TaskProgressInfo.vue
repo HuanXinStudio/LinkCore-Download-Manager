@@ -1,19 +1,44 @@
 <template>
   <div class="task-progress-info-wrap">
   <el-row class="task-progress-info">
-    <el-col
+  <el-col
       class="task-progress-info-left"
       :xs="12"
       :sm="7"
       :md="6"
       :lg="6"
     >
-      <div v-if="!magnetHintText && (task.completedLength > 0 || task.totalLength > 0)">
+      <el-tooltip
+        v-if="!magnetHintText && dataAccessHintText"
+        effect="dark"
+        :content="dataAccessHintText"
+        placement="top"
+        :disabled="!isStatusTruncated"
+      >
+        <div
+          ref="statusText"
+          class="task-magnet-hint task-magnet-hint--ellipsis"
+        >
+          {{ dataAccessHintText }}
+        </div>
+      </el-tooltip>
+      <div v-else-if="!magnetHintText && (task.completedLength > 0 || task.totalLength > 0)">
         <span>{{ task.completedLength | bytesToSize(2) }}</span>
         <span v-if="task.totalLength > 0"> / {{ task.totalLength | bytesToSize(2) }}</span>
       </div>
-      <el-tooltip v-if="magnetHintText" effect="dark" :content="magnetHintText" placement="top">
-        <div class="task-magnet-hint task-magnet-hint--ellipsis">{{ magnetHintText }}</div>
+      <el-tooltip
+        v-if="magnetHintText"
+        effect="dark"
+        :content="magnetHintText"
+        placement="top"
+        :disabled="!isStatusTruncated"
+      >
+        <div
+          ref="magnetHintText"
+          class="task-magnet-hint task-magnet-hint--ellipsis"
+        >
+          {{ magnetHintText }}
+        </div>
       </el-tooltip>
     </el-col>
     <el-col
@@ -58,6 +83,9 @@
         <div class="task-speed-text" v-if="taskPriority > 0">
           <span>{{ $t('task.priority-short') }} {{ taskPriority }}</span>
         </div>
+        <div class="task-speed-text hidden-sm-and-down" v-if="nearCompleteHintText">
+          <span>{{ nearCompleteHintText }}</span>
+        </div>
       </div>
       <div class="task-completion-time" v-else-if="isCompleted">
         <span>{{ $t('task.completed-at') }} {{ completionTime }}</span>
@@ -74,7 +102,8 @@
     checkTaskIsSeeder,
     timeFormat,
     timeRemaining,
-    isMagnetTask
+    isMagnetTask,
+    calcProgress
   } from '@shared/utils'
   import { TASK_STATUS } from '@shared/constants'
   import '@/components/Icons/arrow-up'
@@ -85,6 +114,11 @@
 
   export default {
     name: 'mo-task-progress-info',
+    data () {
+      return {
+        isStatusTruncated: false
+      }
+    },
     props: {
       task: {
         type: Object
@@ -93,6 +127,7 @@
     computed: {
       ...mapState('task', {
         magnetStatuses: state => state.magnetStatuses,
+        dataAccessStatuses: state => state.dataAccessStatuses,
         taskPriorities: state => state.taskPriorities
       }),
       ...mapState('preference', {
@@ -172,6 +207,112 @@
         const gid = this.task && this.task.gid
         const map = this.taskPriorities || {}
         return (gid && map[gid]) ? Number(map[gid]) : 0
+      },
+      nearCompleteHintText () {
+        const { totalLength, completedLength, downloadSpeed, status } = this.task
+        if (status !== TASK_STATUS.ACTIVE) {
+          return ''
+        }
+        const total = Number(totalLength)
+        const completed = Number(completedLength)
+        if (!(total > 0 && completed > 0)) {
+          return ''
+        }
+        const progress = calcProgress(total, completed, 2)
+        if (!(progress >= 99 && progress < 100)) {
+          return ''
+        }
+        if (Number(downloadSpeed) > 0) {
+          return ''
+        }
+        return this.$t('task.near-complete-verifying')
+      },
+      dataAccessHintText () {
+        const task = this.task || {}
+        const status = task.status
+        const downloadSpeed = Number(task.downloadSpeed || 0)
+        const isMagnet = isMagnetTask(task)
+        if (isMagnet) {
+          return ''
+        }
+        if (status === TASK_STATUS.ERROR) {
+          const reason = this.resolveErrorReason(task.errorCode, task.errorMessage)
+          if (reason) {
+            return this.$t('task.download-fail-with-reason', { reason })
+          }
+          return this.$t('task.download-fail-notify')
+        }
+        const waitingStatuses = [TASK_STATUS.ACTIVE, TASK_STATUS.WAITING]
+        if (!waitingStatuses.includes(status)) {
+          return ''
+        }
+        if (downloadSpeed > 0) {
+          return ''
+        }
+        const gid = task.gid
+        const statusInfo = (this.dataAccessStatuses && gid && this.dataAccessStatuses[gid]) || {}
+        const elapsedSec = Number(statusInfo.elapsedSec || 0)
+        if (elapsedSec < 10) {
+          return ''
+        }
+        return this.$t('task.waiting-download-data')
+      },
+      resolveErrorReason (errorCode, errorMessage = '') {
+        const code = Number(errorCode)
+        if (!code) {
+          return ''
+        }
+        const msg = `${errorMessage || ''}`
+        if (code === 3) {
+          return this.$t('task.error-reason-not-found')
+        }
+        if (code === 1) {
+          if (/SSL|TLS|certificate/i.test(msg)) {
+            return this.$t('task.error-reason-ssl')
+          }
+          return this.$t('task.error-reason-network')
+        }
+        if (code === 16) {
+          if (/Permission denied|permission/i.test(msg)) {
+            return this.$t('task.error-reason-permission')
+          }
+          if (/No space left|disk full/i.test(msg)) {
+            return this.$t('task.error-reason-disk-full')
+          }
+          return this.$t('task.error-reason-disk')
+        }
+        return this.$t('task.error-reason-generic')
+      }
+    },
+    watch: {
+      dataAccessHintText () {
+        this.updateStatusTruncation()
+      },
+      magnetHintText () {
+        this.updateStatusTruncation()
+      }
+    },
+    mounted () {
+      this.updateStatusTruncation()
+      if (typeof window !== 'undefined') {
+        window.addEventListener('resize', this.updateStatusTruncation)
+      }
+    },
+    beforeDestroy () {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', this.updateStatusTruncation)
+      }
+    },
+    methods: {
+      updateStatusTruncation () {
+        this.$nextTick(() => {
+          const el = this.$refs.magnetHintText || this.$refs.statusText
+          if (!el || !el.scrollWidth || !el.clientWidth) {
+            this.isStatusTruncated = false
+            return
+          }
+          this.isStatusTruncated = el.scrollWidth > el.clientWidth
+        })
       }
     },
     filters: {

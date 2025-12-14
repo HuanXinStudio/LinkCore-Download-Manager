@@ -40,28 +40,47 @@ export default class UpdateManager extends EventEmitter {
       proxyMode = proxy.enable ? PROXY_MODE.CUSTOM : PROXY_MODE.NONE
     }
 
-    // 只有自定义代理模式才设置代理规则
-    if (proxyMode !== PROXY_MODE.CUSTOM || !server || !scope.includes(PROXY_SCOPES.UPDATE_APP)) {
+    const enableUpdateProxy = scope.includes(PROXY_SCOPES.UPDATE_APP)
+
+    // 不使用代理：强制直连，避免走系统代理
+    if (proxyMode === PROXY_MODE.NONE) {
       this.updater.netSession.setProxy({
-        proxyRules: undefined
+        proxyRules: 'direct://'
       })
       return
     }
 
-    const url = new URL(server)
-    const { username, password, protocol = 'http:', host, port } = url
-    const proxyRules = `${protocol}//${host}`
+    // 自定义代理：仅在勾选了“更新应用程序”时对更新生效
+    if (proxyMode === PROXY_MODE.CUSTOM && server && enableUpdateProxy) {
+      const url = new URL(server)
+      const { username, password, protocol = 'http:', host, port } = url
+      const proxyRules = `${protocol}//${host}`
 
-    logger.info(`[Motrix] setup proxy: ${proxyRules}`, username, password, protocol, host, port)
-    this.updater.netSession.setProxy({
-      proxyRules
-    })
-
-    if (server.includes('@')) {
-      this.updater.signals.login((_authInfo, callback) => {
-        callback(username, password)
+      logger.info(`[Motrix] setup proxy: ${proxyRules}`, username, password, protocol, host, port)
+      this.updater.netSession.setProxy({
+        proxyRules
       })
+
+      if (server.includes('@')) {
+        this.updater.signals.login((_authInfo, callback) => {
+          callback(username, password)
+        })
+      }
+      return
     }
+
+    // 系统代理模式且勾选“更新应用程序”：显式使用系统代理
+    if (proxyMode === PROXY_MODE.SYSTEM && enableUpdateProxy) {
+      this.updater.netSession.setProxy({
+        proxyRules: 'system'
+      })
+      return
+    }
+
+    // 其他情况（例如未勾选更新应用）：走直连
+    this.updater.netSession.setProxy({
+      proxyRules: 'direct://'
+    })
   }
 
   init () {

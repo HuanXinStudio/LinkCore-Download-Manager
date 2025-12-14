@@ -14,6 +14,7 @@ const state = {
   taskList: [],
   selectedGidList: [],
   magnetStatuses: {},
+  dataAccessStatuses: {},
   taskPriorities: {}
 }
 
@@ -61,6 +62,16 @@ const mutations = {
     delete next[gid]
     state.magnetStatuses = next
   },
+  UPDATE_DATA_ACCESS_STATUS (state, payload) {
+    const { gid, ...rest } = payload
+    const prev = state.dataAccessStatuses[gid] || {}
+    state.dataAccessStatuses = { ...state.dataAccessStatuses, [gid]: { ...prev, ...rest } }
+  },
+  CLEAR_DATA_ACCESS_STATUS (state, gid) {
+    const next = { ...state.dataAccessStatuses }
+    delete next[gid]
+    state.dataAccessStatuses = next
+  },
   UPDATE_TASK_PRIORITIES (state, mapping) {
     state.taskPriorities = { ...state.taskPriorities, ...mapping }
   }
@@ -104,6 +115,12 @@ const actions = {
           }
         } catch (e) {}
       })
+  },
+  updateDataAccessStatus ({ commit }, payload) {
+    commit('UPDATE_DATA_ACCESS_STATUS', payload)
+  },
+  clearDataAccessStatus ({ commit }, gid) {
+    commit('CLEAR_DATA_ACCESS_STATUS', gid)
   },
   selectTasks ({ commit }, list) {
     commit('UPDATE_SELECTED_GID_LIST', list)

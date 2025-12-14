@@ -9,6 +9,7 @@
         :completed="Number(task.completedLength)"
         :total="Number(task.totalLength)"
         :status="taskStatus"
+        :speed="Number(task.downloadSpeed)"
       />
       <mo-task-progress-info :task="task" />
     </div>

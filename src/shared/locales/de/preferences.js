@@ -199,19 +199,7 @@ export default {
   'paste-and-import': 'Einfügen und importieren',
   'extension-rpc': 'Von der Erweiterung verwendete RPC-URL',
   'extension-copy-rpc': 'RPC-URL kopieren',
-  'extension-tips': 'Installieren und aktivieren Sie die Browser-Erweiterung, um Downloads automatisch zu übernehmen',
+  'extension-tips': 'Installieren und aktivieren Sie die Browser-Erweiterung, um Downloads automatisch abzufangen',
   'cancel': 'Abbrechen',
-  'save': 'Speichern',
-  'scheduler': 'Scheduler-Engine - Test',
-  'scheduler-enabled': 'Scheduler-Engine aktivieren',
-  'scheduler-enabled-tips': 'Erkennt automatisch langsame Download-Aufgaben und löst eine Neuzuweisung aus, ohne dass Benutzereingriffe erforderlich sind',
-  'scheduler-low-speed-threshold': 'Niedriggeschwindigkeits-Schwellenwert',
-  'scheduler-low-speed-threshold-tips': 'Löst die Planung aus, wenn die Geschwindigkeit unter diesen Prozentsatz der Spitzengeschwindigkeit fällt',
-  'scheduler-min-peak-speed': 'Minimale Spitzengeschwindigkeit',
-  'scheduler-min-peak-speed-tips': 'Berücksichtigt nur die Niedriggeschwindigkeits-Auslösung, wenn die Spitzengeschwindigkeit diesen Wert überschreitet',
-  'scheduler-min-file-size': 'Minimale Dateigröße',
-  'scheduler-min-file-size-tips': 'Aufgaben, die kleiner als diese Größe sind, werden nicht geplant',
-  'scheduler-max-rebalance-count': 'Maximale Neuverteilungsanzahl',
-  'scheduler-max-rebalance-count-tips': 'Maximale Anzahl der Neuverteilungen pro Aufgabe',
-  'scheduler-tips': 'Scheduler-Engine Konfigurationsanleitung'
+  'save': 'Speichern'
 }

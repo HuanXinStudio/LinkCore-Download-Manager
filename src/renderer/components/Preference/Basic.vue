@@ -1038,12 +1038,13 @@
           })
       },
       async downloadExtension () {
-        const { dialog } = require('@electron/remote')
+        const { dialog, app } = require('@electron/remote')
         const fs = require('fs')
         const path = require('path')
 
-        // 扩展文件路径 - 指向目录
-        const extensionDir = path.join(__dirname, '..', '..', '..', '..', 'extensions', 'linkcore-webextension')
+        // 扩展文件路径 - 指向目录（支持开发和生产环境）
+        const appPath = app.getAppPath()
+        const extensionDir = path.join(appPath, 'extensions', 'linkcore-webextension')
 
         // 检查目录是否存在
         if (!fs.existsSync(extensionDir)) {

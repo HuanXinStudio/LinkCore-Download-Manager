@@ -11,9 +11,19 @@
     :before-close="handleClose"
     @closed="handleClosed"
   >
-    <div v-if="magnetHintText" class="task-detail-hint">
-      <el-tooltip effect="dark" :content="magnetHintText" placement="bottom">
-        <span class="task-detail-hint__text">{{ magnetHintText }}</span>
+    <div v-if="statusHintText" class="task-detail-hint">
+      <el-tooltip
+        effect="dark"
+        :content="statusHintText"
+        placement="bottom"
+        :disabled="!statusHintTruncated"
+      >
+        <span
+          ref="detailStatusText"
+          class="task-detail-hint__text"
+        >
+          {{ statusHintText }}
+        </span>
       </el-tooltip>
     </div>
     <div v-if="isCompleted" class="task-detail-completion-time">
@@ -188,12 +198,14 @@
         graphicWidth: 0,
         optionsChanged: false,
         filesSelection: EMPTY_STRING,
-        selectionChangedCount: 0
+        selectionChangedCount: 0,
+        statusHintTruncated: false
       }
     },
     computed: {
       ...mapState('task', {
-        magnetStatuses: state => state.magnetStatuses
+        magnetStatuses: state => state.magnetStatuses,
+        dataAccessStatuses: state => state.dataAccessStatuses
       }),
       ...mapState('preference', {
         preferenceConfig: state => state.config
@@ -251,6 +263,68 @@
         const trendText = peerTrend === 'up' ? this.$t('task.magnet-trend-up') : (peerTrend === 'down' ? this.$t('task.magnet-trend-down') : '')
         return `${peersText}，${trackersText}${trendText ? '，' + trendText : ''}`
       },
+      statusHintText () {
+        const task = this.task || {}
+        const magnetText = this.magnetHintText
+        if (magnetText) {
+          return magnetText
+        }
+        const status = task.status
+        const isMagnet = isMagnetTask(task)
+        if (isMagnet) {
+          return ''
+        }
+        if (status === TASK_STATUS.ERROR) {
+          const reason = this.resolveErrorReason(task.errorCode, task.errorMessage)
+          if (reason) {
+            return this.$t('task.download-fail-with-reason', { reason })
+          }
+          return this.$t('task.download-fail-notify')
+        }
+        const waitingStatuses = [TASK_STATUS.ACTIVE, TASK_STATUS.WAITING]
+        if (!waitingStatuses.includes(status)) {
+          return ''
+        }
+        const downloadSpeed = Number(task.downloadSpeed || 0)
+        if (downloadSpeed > 0) {
+          return ''
+        }
+        const gid = task.gid
+        const statusInfo = (this.dataAccessStatuses && gid && this.dataAccessStatuses[gid]) || {}
+        const elapsedSec = Number(statusInfo.elapsedSec || 0)
+        if (elapsedSec < 10) {
+          return ''
+        }
+        return this.$t('task.waiting-download-data')
+      },
+      resolveErrorReason () {
+        return (errorCode, errorMessage = '') => {
+          const code = Number(errorCode)
+          if (!code) {
+            return ''
+          }
+          const msg = `${errorMessage || ''}`
+          if (code === 3) {
+            return this.$t('task.error-reason-not-found')
+          }
+          if (code === 1) {
+            if (/SSL|TLS|certificate/i.test(msg)) {
+              return this.$t('task.error-reason-ssl')
+            }
+            return this.$t('task.error-reason-network')
+          }
+          if (code === 16) {
+            if (/Permission denied|permission/i.test(msg)) {
+              return this.$t('task.error-reason-permission')
+            }
+            if (/No space left|disk full/i.test(msg)) {
+              return this.$t('task.error-reason-disk-full')
+            }
+            return this.$t('task.error-reason-disk')
+          }
+          return this.$t('task.error-reason-generic')
+        }
+      },
       taskStatus () {
         const { task, isSeeder } = this
         if (isSeeder) {
@@ -305,6 +379,9 @@
     watch: {
       gid () {
         cached.files = []
+      },
+      statusHintText () {
+        this.updateStatusTruncation()
       }
     },
     methods: {
@@ -317,6 +394,16 @@
         this.$store.dispatch('task/updateCurrentTaskItem', null)
         this.optionsChanged = false
         this.resetFaskFilesSelection()
+      },
+      updateStatusTruncation () {
+        this.$nextTick(() => {
+          const el = this.$refs.detailStatusText
+          if (!el || !el.scrollWidth || !el.clientWidth) {
+            this.statusHintTruncated = false
+            return
+          }
+          this.statusHintTruncated = el.scrollWidth > el.clientWidth
+        })
       },
       handleTabBeforeLeave (activeName, oldActiveName) {
         this.activeTab = activeName

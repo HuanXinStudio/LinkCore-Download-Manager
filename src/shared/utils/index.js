@@ -103,7 +103,7 @@ export const peerIdParser = (str) => {
 export const calcProgress = (totalLength, completedLength, decimal = 2) => {
   const total = parseInt(totalLength, 10)
   const completed = parseInt(completedLength, 10)
-  if (total === 0 || completed === 0) {
+  if (total === 0) {
     return 0
   }
   const percentage = completed / total * 100
@@ -701,6 +701,36 @@ export const checkIsNeedRun = (enable, lastTime, interval) => {
   }
 
   return (Date.now() - lastTime > interval)
+}
+
+export const checkIsNeedRunAdvanced = (enable, lastTime, interval, customTime) => {
+  if (!enable) {
+    return false
+  }
+
+  const now = Date.now()
+
+  // 如果提供了自定义时间（如"02:00"），按具体时间点检查
+  if (customTime) {
+    const [hours, minutes] = customTime.split(':').map(Number)
+    const targetTime = new Date()
+    targetTime.setHours(hours, minutes, 0, 0)
+
+    // 如果当前时间已经超过目标时间，检查是否在今天已经运行过
+    if (now >= targetTime.getTime()) {
+      // 检查上次运行时间是否在今天目标时间之前
+      const lastSyncDate = new Date(lastTime)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      return lastSyncDate < today || lastTime < targetTime.getTime()
+    }
+
+    return false
+  }
+
+  // 否则按间隔时间检查
+  return (now - lastTime > interval)
 }
 
 export const generateRandomInt = (min = 0, max = 10000) => {

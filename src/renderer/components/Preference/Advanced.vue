@@ -127,118 +127,6 @@
           </el-form-item>
         </div>
 
-        <!-- 调度引擎设置卡片 -->
-        <div class="preference-card">
-          <h3 class="card-title">{{ $t('preferences.scheduler') }}</h3>
-          <el-form-item size="mini">
-            <el-col class="form-item-sub" :span="24">
-              <el-checkbox v-model="form.scheduler.enabled" @change="autoSaveForm">
-                {{ $t('preferences.scheduler-enabled') }}
-              </el-checkbox>
-              <div class="el-form-item__info" style="margin-top: 4px;">
-                {{ $t('preferences.scheduler-enabled-tips') }}
-              </div>
-            </el-col>
-          </el-form-item>
-          <template v-if="form.scheduler.enabled">
-            <el-form-item size="mini" :label="$t('preferences.scheduler-low-speed-threshold')" style="margin-top: 8px;">
-              <el-col :xs="16" :sm="12" :md="8" :lg="6">
-                <el-input-number
-                  v-model="form.scheduler.lowSpeedThreshold"
-                  :min="5"
-                  :max="50"
-                  :step="5"
-                  size="mini"
-                  @change="autoSaveForm"
-                />
-                <span style="margin-left: 8px;">%</span>
-              </el-col>
-              <el-col :span="24" style="margin-top: 4px;">
-                <div class="el-form-item__info">
-                  {{ $t('preferences.scheduler-low-speed-threshold-tips') }}
-                </div>
-              </el-col>
-            </el-form-item>
-            <el-form-item size="mini" :label="$t('preferences.scheduler-min-peak-speed')">
-              <el-col :xs="18" :sm="14" :md="10" :lg="8">
-                <el-input-number
-                  v-model="form.scheduler.minPeakSpeed"
-                  :min="1"
-                  :max="9999"
-                  :step="10"
-                  size="mini"
-                  @change="autoSaveForm"
-                />
-                <el-select
-                  style="width: 90px; margin-left: 8px;"
-                  v-model="form.scheduler.minPeakSpeedUnit"
-                  size="mini"
-                  @change="autoSaveForm"
-                >
-                  <el-option
-                    v-for="item in schedulerSpeedUnits"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
-                  />
-                </el-select>
-              </el-col>
-              <el-col :span="24" style="margin-top: 4px;">
-                <div class="el-form-item__info">
-                  {{ $t('preferences.scheduler-min-peak-speed-tips') }}
-                </div>
-              </el-col>
-            </el-form-item>
-            <el-form-item size="mini" :label="$t('preferences.scheduler-min-file-size')">
-              <el-col :xs="18" :sm="14" :md="10" :lg="8">
-                <el-input-number
-                  v-model="form.scheduler.minFileSize"
-                  :min="1"
-                  :max="9999"
-                  :step="1"
-                  size="mini"
-                  @change="autoSaveForm"
-                />
-                <el-select
-                  style="width: 90px; margin-left: 8px;"
-                  v-model="form.scheduler.minFileSizeUnit"
-                  size="mini"
-                  @change="autoSaveForm"
-                >
-                  <el-option
-                    v-for="item in schedulerSizeUnits"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
-                  />
-                </el-select>
-              </el-col>
-              <el-col :span="24" style="margin-top: 4px;">
-                <div class="el-form-item__info">
-                  {{ $t('preferences.scheduler-min-file-size-tips') }}
-                </div>
-              </el-col>
-            </el-form-item>
-            <el-form-item size="mini" :label="$t('preferences.scheduler-max-rebalance-count')">
-              <el-col :xs="16" :sm="12" :md="8" :lg="6">
-                <el-input-number
-                  v-model="form.scheduler.maxRebalanceCount"
-                  :min="1"
-                  :max="20"
-                  :step="1"
-                  size="mini"
-                  @change="autoSaveForm"
-                />
-              </el-col>
-              <el-col :span="24" style="margin-top: 4px;">
-                <div class="el-form-item__info">
-                  {{ $t('preferences.scheduler-max-rebalance-count-tips') }}
-                </div>
-              </el-col>
-            </el-form-item>
-          </template>
-        </div>
-
         <!-- BT Tracker设置卡片 -->
         <div class="preference-card">
           <h3 class="card-title">{{ $t('preferences.bt-tracker') }}</h3>
@@ -369,11 +257,27 @@
               <el-checkbox v-model="form.autoSyncTracker">
                 {{ $t('preferences.auto-sync-tracker') }}
               </el-checkbox>
-              <div class="el-form-item__info" style="margin-top: 8px;" v-if="form.lastSyncTrackerTime > 0">
-                {{ new Date(form.lastSyncTrackerTime).toLocaleString() }}
+            </div>
+            <div class="form-item-sub" v-if="form.autoSyncTracker" style="margin-top: 12px;">
+              <div class="sync-time-setting" style="display: flex; align-items: center; margin-bottom: 12px;">
+                <el-time-picker
+                  v-model="form.autoSyncTrackerTime"
+                  placeholder="选择时间"
+                  format="HH:mm"
+                  value-format="HH:mm"
+                  size="mini"
+                  style="width: 100%;"
+                  @change="autoSaveForm"
+                />
               </div>
+
             </div>
           </el-form-item>
+          <div class="form-item-sub" style="margin-top: 16px; text-align: center;" v-if="form.lastSyncTrackerTime > 0">
+            <div class="el-form-item__info">
+              {{ $t('preferences.last-sync-tracker-time') }}: {{ new Date(form.lastSyncTrackerTime).toLocaleString() }}
+            </div>
+          </div>
         </div>
 
         <!-- RPC设置卡片 -->
@@ -747,7 +651,7 @@
   import is from 'electron-is'
   import { dialog } from '@electron/remote'
   import { mapState, mapActions } from 'vuex'
-  import { cloneDeep, extend, isEmpty } from 'lodash'
+  import { cloneDeep, isEmpty } from 'lodash'
   import randomize from 'randomatic'
   import axios from 'axios'
   import ShowInFolder from '@/components/Native/ShowInFolder'
@@ -783,6 +687,8 @@
     const {
       autoCheckUpdate,
       autoSyncTracker,
+      autoSyncTrackerInterval,
+      autoSyncTrackerTime,
       btTracker,
       dhtListenPort,
       enableUpnp,
@@ -812,20 +718,20 @@
       // 如果没有 mode 字段，根据旧的 enable 字段设置默认值
       clonedProxy.mode = clonedProxy.enable ? 'custom' : 'none'
     }
-    // 调度引擎配置默认值
+    // 调度引擎配置默认值 - 实时模式
     const defaultScheduler = {
       enabled: false,
-      lowSpeedThreshold: 20,
-      minPeakSpeed: 100,
-      minPeakSpeedUnit: 'K',
       minFileSize: 10,
       minFileSizeUnit: 'M',
-      maxRebalanceCount: 5
+      maxRebalanceCount: 50,
+      activeOptimizationInterval: 5
     }
     const clonedScheduler = { ...defaultScheduler, ...(scheduler || {}) }
     const result = {
       autoCheckUpdate,
       autoSyncTracker,
+      autoSyncTrackerInterval: autoSyncTrackerInterval || config['auto-sync-tracker-interval'] || 12,
+      autoSyncTrackerTime: autoSyncTrackerTime !== undefined ? autoSyncTrackerTime : (config['auto-sync-tracker-time'] !== undefined ? config['auto-sync-tracker-time'] : '00:00'),
       btTracker: convertCommaToLine(btTracker),
       dhtListenPort,
       enableUpnp,
@@ -860,7 +766,8 @@
       const { locale } = this.$store.state.preference.config
       const formOriginal = initForm(this.$store.state.preference.config)
       let form = {}
-      form = initForm(extend(form, formOriginal, changedConfig.advanced))
+      // 直接从store中获取配置，不依赖changedConfig
+      form = initForm(this.$store.state.preference.config)
 
       return {
         form,
@@ -1956,6 +1863,12 @@
           if ('engineBinary' in data) {
             data['engine-binary'] = data.engineBinary
             delete data.engineBinary
+          }
+
+          // 显式处理autoSyncTrackerTime字段，转换为kebab-case
+          if ('autoSyncTrackerTime' in data) {
+            data['auto-sync-tracker-time'] = data.autoSyncTrackerTime
+            delete data.autoSyncTrackerTime
           }
 
           const {

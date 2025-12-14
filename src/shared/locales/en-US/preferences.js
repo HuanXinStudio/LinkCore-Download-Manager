@@ -84,6 +84,8 @@ export default {
   'deselect-all-tracker-sources': 'Deselect all',
   'deselect-all-tracker-sources-success': 'All Tracker server sources deselected',
   'auto-sync-tracker': 'Update tracker list every day automatically',
+  'auto-sync-tracker-time': 'Update time',
+  'auto-sync-tracker-tips': 'Set the specific time for daily automatic tracker updates',
   'add-source': 'Add Source',
   'added-origins': 'Added Origins:',
   'long-press-to-delete': 'Long press to delete',
@@ -205,17 +207,5 @@ export default {
   'user-agent-aria2': 'Aria2',
   'user-agent-transmission': 'Transmission',
   'user-agent-chrome': 'Chrome',
-  'user-agent-du': 'du',
-  'scheduler': 'Scheduler Engine - Test',
-  'scheduler-enabled': 'Enable Scheduler Engine',
-  'scheduler-enabled-tips': 'Automatically detect slow download tasks and trigger rescheduling without user intervention',
-  'scheduler-low-speed-threshold': 'Low Speed Threshold',
-  'scheduler-low-speed-threshold-tips': 'Trigger scheduling when speed drops below this percentage of peak speed',
-  'scheduler-min-peak-speed': 'Min Peak Speed',
-  'scheduler-min-peak-speed-tips': 'Only consider low speed trigger when peak speed exceeds this value',
-  'scheduler-min-file-size': 'Min File Size',
-  'scheduler-min-file-size-tips': 'Tasks smaller than this size will not be scheduled',
-  'scheduler-max-rebalance-count': 'Max Rebalance Count',
-  'scheduler-max-rebalance-count-tips': 'Maximum number of rebalancing attempts per task',
-  'scheduler-tips': 'Scheduler Configuration Guide'
+  'user-agent-du': 'du'
 }

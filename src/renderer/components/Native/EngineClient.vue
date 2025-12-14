@@ -10,7 +10,7 @@
     getTaskFullPath,
     showItemInFolder
   } from '@/utils/native'
-  import taskScheduler from '@/utils/TaskScheduler'
+
   import { checkTaskIsBT, getTaskName, isMagnetTask } from '@shared/utils'
   import { existsSync, renameSync, mkdirSync, utimesSync, statSync } from 'node:fs'
   import { dirname } from 'path'
@@ -22,7 +22,8 @@
       return {
         magnetZeroMap: {},
         magnetAlertedSet: new Set(),
-        schedulerInitialized: false
+        dataAccessZeroMap: {},
+        dataAccessLastCompletedMap: {}
       }
     },
     computed: {
@@ -65,15 +66,6 @@
       },
       progress (val) {
         this.$electron.ipcRenderer.send('event', 'progress-change', val)
-      },
-      // 监听调度器配置变化
-      '$store.state.preference.config.scheduler': {
-        handler (newConfig) {
-          if (newConfig) {
-            taskScheduler.updateUserConfig(newConfig)
-          }
-        },
-        deep: true
       }
     },
     methods: {
@@ -128,6 +120,9 @@
                   /* eslint-disable no-new */
                   new Notification(message, { body: taskName })
                 }
+              } else {
+                const message = this.$t('task.download-start-message', { taskName })
+                this.$msg.info(message)
               }
             } catch (_) {}
 
@@ -168,7 +163,10 @@
             const taskName = getTaskName(task)
             const { errorCode, errorMessage } = task
             console.error(`[Motrix] download error gid: ${gid}, #${errorCode}, ${errorMessage}`)
-            const message = this.$t('task.download-error-message', { taskName })
+            const reason = this.resolveErrorReason(errorCode, errorMessage)
+            const message = reason
+              ? this.$t('task.download-error-with-reason', { taskName, reason })
+              : this.$t('task.download-error-message', { taskName })
             const link = `<a target="_blank" href="https://github.com/agalwood/Motrix/wiki/Error#${errorCode}" rel="noopener noreferrer">${errorCode}</a>`
             this.$msg({
               type: 'error',
@@ -183,9 +181,6 @@
         this.$store.dispatch('task/fetchList')
         const [{ gid }] = event
         this.$store.dispatch('task/removeFromSeedingList', gid)
-
-        // 清理调度器中的任务监控数据
-        this.cleanupSchedulerTask(gid)
 
         this.fetchTaskItem({ gid })
           .then((task) => {
@@ -426,10 +421,9 @@
         this.$store.dispatch('app/fetchProgress')
         this.$store.dispatch('task/fetchList').then(() => {
           this.checkMagnetAlerts()
+          this.checkDataAccessStatus()
           const list = this.$store.state.task.taskList || []
           list.forEach(task => this.maybeRestoreSuffixNearCompletion(task))
-          // 执行动态负载均衡检测
-          this.checkAndExecuteLoadBalancing(list)
         })
 
         if (this.taskDetailVisible && this.currentTaskGid) {
@@ -551,66 +545,67 @@
           }
         })
       },
+      checkDataAccessStatus () {
+        const list = this.$store.state.task.taskList || []
+        const activeStatuses = ['active', 'waiting']
+        list.forEach(task => {
+          const gid = task.gid
+          const status = task.status
+          const isMagnet = isMagnetTask(task)
+          if (!activeStatuses.includes(status) || isMagnet) {
+            this.dataAccessZeroMap[gid] = 0
+            this.dataAccessLastCompletedMap[gid] = undefined
+            this.$store.dispatch('task/clearDataAccessStatus', gid)
+            return
+          }
+          const completed = Number(task.completedLength || 0)
+          const speedZero = Number(task.downloadSpeed) === 0
+          const lastCompleted = Number(this.dataAccessLastCompletedMap[gid] || 0)
+          if (!speedZero || completed > lastCompleted) {
+            this.dataAccessLastCompletedMap[gid] = completed
+            this.dataAccessZeroMap[gid] = 0
+            this.$store.dispatch('task/clearDataAccessStatus', gid)
+            return
+          }
+          const count = (this.dataAccessZeroMap[gid] || 0) + 1
+          this.dataAccessZeroMap[gid] = count
+          const elapsedSec = Math.round(count * (this.interval / 1000))
+          this.$store.dispatch('task/updateDataAccessStatus', {
+            gid,
+            elapsedSec,
+            updatedAt: Date.now()
+          })
+        })
+      },
+      resolveErrorReason (errorCode, errorMessage = '') {
+        const code = Number(errorCode)
+        if (!code) {
+          return ''
+        }
+        const msg = `${errorMessage || ''}`
+        if (code === 3) {
+          return this.$t('task.error-reason-not-found')
+        }
+        if (code === 1) {
+          if (/SSL|TLS|certificate/i.test(msg)) {
+            return this.$t('task.error-reason-ssl')
+          }
+          return this.$t('task.error-reason-network')
+        }
+        if (code === 16) {
+          if (/Permission denied|permission/i.test(msg)) {
+            return this.$t('task.error-reason-permission')
+          }
+          if (/No space left|disk full/i.test(msg)) {
+            return this.$t('task.error-reason-disk-full')
+          }
+          return this.$t('task.error-reason-disk')
+        }
+        return this.$t('task.error-reason-generic')
+      },
       stopPolling () {
         clearTimeout(this.timer)
         this.timer = null
-      },
-      /**
-       * 初始化调度器回调（静默模式，用户无感知）
-       */
-      initScheduler () {
-        if (this.schedulerInitialized) return
-
-        // 从 store 中读取调度器配置并更新
-        const schedulerConfig = this.$store.state.preference.config.scheduler
-        if (schedulerConfig) {
-          taskScheduler.updateUserConfig(schedulerConfig)
-        }
-
-        taskScheduler.setCallbacks({
-          onRebalanceStart: (gid, options = {}) => {
-            // 静默模式：不显示任何 UI 通知
-          },
-          onRebalanceComplete: (gid, success, error, options = {}) => {
-            // 静默模式：不显示任何 UI 通知
-          }
-        })
-
-        this.schedulerInitialized = true
-      },
-      /**
-       * 检查并执行负载均衡（静默执行）
-       */
-      async checkAndExecuteLoadBalancing (taskList) {
-        if (!taskList || taskList.length === 0) return
-
-        for (const task of taskList) {
-          // 跳过 BT 任务，BT 任务有自己的片段分配机制
-          if (checkTaskIsBT(task)) {
-            continue
-          }
-
-          // 检测任务是否需要负载均衡
-          const result = taskScheduler.updateTaskMonitor(task)
-
-          if (result.needsRebalance) {
-            // 静默执行负载均衡
-            await taskScheduler.executeRebalance(task.gid, {
-              pauseTask: (params) => api.forcePauseTask(params),
-              resumeTask: (params) => api.resumeTask(params),
-              changeOption: (params) => api.changeOption(params)
-            })
-
-            // 每次只处理一个任务，避免并发问题
-            break
-          }
-        }
-      },
-      /**
-       * 清理已完成任务的调度器数据
-       */
-      cleanupSchedulerTask (gid) {
-        taskScheduler.cleanupCompletedTask(gid)
       }
     },
     created () {
@@ -621,9 +616,6 @@
         this.$store.dispatch('app/fetchEngineInfo')
         this.$store.dispatch('app/fetchEngineOptions')
 
-        // 初始化负载均衡调度器
-        this.initScheduler()
-
         this.startPolling()
       }, 100)
     },
@@ -633,9 +625,6 @@
       this.unbindEngineEvents()
 
       this.stopPolling()
-
-      // 清理调度器
-      taskScheduler.cleanup()
     }
   }
 </script>

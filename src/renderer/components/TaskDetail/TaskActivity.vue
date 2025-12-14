@@ -24,6 +24,7 @@
                 :completed="Number(task.completedLength)"
                 :total="Number(task.totalLength)"
                 :status="taskStatus"
+                :speed="Number(task.downloadSpeed)"
               />
             </div>
           </el-col>
@@ -150,7 +151,8 @@
         speedSamples: [],
         // 记录开始采样时的已下载量，用于计算增量
         initialCompletedLength: 0,
-        downloadStartTime: null
+        downloadStartTime: null,
+        downloadEndTime: null
       }
     },
     computed: {
@@ -191,28 +193,18 @@
         return ratio
       },
       averageDownloadSpeed () {
-        // 基于速度采样计算平均值（只计算有效的非零采样）
-        if (this.speedSamples.length > 0) {
-          const validSamples = this.speedSamples.filter(s => s > 0)
-          if (validSamples.length > 0) {
-            const sum = validSamples.reduce((a, b) => a + b, 0)
-            return Math.round(sum / validSamples.length)
-          }
+        if (this.speedSamples.length === 0) {
+          return 0
         }
-
-        // 备用方式：基于增量下载和时间计算（仅计算打开详情页后新下载的部分）
-        if (this.downloadStartTime && this.task.completedLength > this.initialCompletedLength) {
-          const elapsedSeconds = (Date.now() - this.downloadStartTime) / 1000
-          const downloadedSinceStart = this.task.completedLength - this.initialCompletedLength
-          if (elapsedSeconds > 0 && downloadedSinceStart > 0) {
-            return Math.round(downloadedSinceStart / elapsedSeconds)
-          }
+        const validSamples = this.speedSamples.filter(s => typeof s === 'number' && s >= 0)
+        if (validSamples.length === 0) {
+          return 0
         }
-
-        return 0
+        const sum = validSamples.reduce((a, b) => a + b, 0)
+        return Math.round(sum / validSamples.length)
       },
       speedSampleCount () {
-        return this.speedSamples.filter(s => s > 0).length
+        return this.speedSamples.filter(s => typeof s === 'number' && s > 0).length
       }
     },
     filters: {
@@ -238,6 +230,19 @@
           }
         },
         immediate: true
+      },
+      'task.status': {
+        handler (newStatus, oldStatus) {
+          if (oldStatus === TASK_STATUS.ACTIVE && newStatus !== TASK_STATUS.ACTIVE && this.downloadStartTime && this.task && this.task.completedLength > this.initialCompletedLength) {
+            this.downloadEndTime = Date.now()
+          }
+          if (newStatus === TASK_STATUS.ACTIVE && oldStatus !== TASK_STATUS.ACTIVE) {
+            this.speedSamples = []
+            this.downloadStartTime = Date.now()
+            this.initialCompletedLength = this.task ? this.task.completedLength : 0
+            this.downloadEndTime = null
+          }
+        }
       },
       'task.gid': {
         handler (newGid, oldGid) {

@@ -16,7 +16,8 @@
       "output": "release"
     },
     "files": [
-      "dist/electron/**/*"
+      "dist/electron/**/*",
+      "extensions/**/*"
     ],
     "protocols": [
       {

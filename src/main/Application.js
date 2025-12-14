@@ -10,18 +10,19 @@ import Store from 'electron-store'
 import {
   APP_RUN_MODE,
   AUTO_SYNC_TRACKER_INTERVAL,
+  ONE_HOUR,
   PROXY_SCOPES,
   PROXY_MODE,
   APP_HTTP_PORT
 } from '@shared/constants'
-import { checkIsNeedRun } from '@shared/utils'
+import { checkIsNeedRunAdvanced } from '@shared/utils'
 import {
   convertTrackerDataToComma,
   fetchBtTrackerFromSource,
   reduceTrackerString
 } from '@shared/utils/tracker'
 import { inferRefererFromUrl } from '@shared/utils/referer-rules'
-import { showItemInFolder, getEngineList, getAria2ConfPath } from './utils'
+import { showItemInFolder, getEngineList, getAria2ConfPath, getSystemHttpProxy } from './utils'
 import logger from './core/Logger'
 import Context from './core/Context'
 import ConfigManager from './core/ConfigManager'
@@ -163,18 +164,48 @@ export default class Application extends EventEmitter {
                 res.end(JSON.stringify({ ok: false, error: 'invalid url' }))
                 return
               }
-              const options = { header: Array.isArray(headers) && headers.length ? headers : ['X-LinkCore-Source: BrowserExtension'] }
 
-              // 检查用户的 headers 数组中是否已经包含 Referer
-              const hasRefererInHeaders = Array.isArray(headers) && headers.some(h =>
+              const headerList = []
+              if (Array.isArray(headers)) {
+                headers.forEach((h) => {
+                  if (!h) return
+                  if (typeof h === 'string') {
+                    headerList.push(h)
+                  } else if (h && typeof h === 'object') {
+                    const name = h.name || h.key || h.header
+                    const value = h.value
+                    if (name && typeof value !== 'undefined') {
+                      headerList.push(`${name}: ${value}`)
+                    }
+                  }
+                })
+              } else if (headers && typeof headers === 'object') {
+                Object.keys(headers).forEach((k) => {
+                  const v = headers[k]
+                  if (typeof v !== 'undefined') {
+                    headerList.push(`${k}: ${v}`)
+                  }
+                })
+              } else if (typeof headers === 'string' && headers.trim()) {
+                headerList.push(headers)
+              }
+
+              let finalHeaders = headerList
+              if (!finalHeaders.length) {
+                finalHeaders = ['X-LinkCore-Source: BrowserExtension']
+              } else if (!finalHeaders.some(h => typeof h === 'string' && /^x-linkcore-source\s*:/i.test(h.trim()))) {
+                finalHeaders = [...finalHeaders, 'X-LinkCore-Source: BrowserExtension']
+              }
+
+              const options = { header: finalHeaders }
+
+              const hasRefererInHeaders = finalHeaders.some(h =>
                 typeof h === 'string' && /^referer\s*:/i.test(h.trim())
               )
 
-              // 如果有 referer 则使用，否则自动推断（但不覆盖用户在 headers 中设置的）
               if (referer) {
                 options.referer = referer
               } else if (!hasRefererInHeaders) {
-                // 自动推断 Referer（仅在用户未设置任何 Referer 时）
                 const inferredReferer = inferRefererFromUrl(url)
                 if (inferredReferer) {
                   options.referer = inferredReferer
@@ -498,19 +529,24 @@ export default class Application extends EventEmitter {
 
       let system = {}
       if (proxyMode === PROXY_MODE.CUSTOM && server && scope.includes(PROXY_SCOPES.DOWNLOAD)) {
-        // 自定义代理模式：使用用户设置的代理服务器
         system = {
           'all-proxy': server,
           'no-proxy': bypass
         }
       } else if (proxyMode === PROXY_MODE.SYSTEM && scope.includes(PROXY_SCOPES.DOWNLOAD)) {
-        // 系统代理模式：清空 aria2 代理设置，aria2 会自动使用系统代理
-        system = {
-          'all-proxy': '',
-          'no-proxy': ''
+        const systemProxy = await getSystemHttpProxy()
+        if (systemProxy) {
+          system = {
+            'all-proxy': systemProxy,
+            'no-proxy': bypass
+          }
+        } else {
+          system = {
+            'all-proxy': '',
+            'no-proxy': ''
+          }
         }
       } else {
-        // 不使用代理模式：清空代理设置
         system = {
           'all-proxy': '',
           'no-proxy': ''
@@ -518,6 +554,15 @@ export default class Application extends EventEmitter {
       }
       this.configManager.setSystemConfig(system)
       this.engineClient.call('changeGlobalOption', system)
+
+      if (scope.includes(PROXY_SCOPES.DOWNLOAD)) {
+        setTimeout(() => {
+          this.engineClient.call('pauseAll')
+          setTimeout(() => {
+            this.engineClient.call('unpauseAll')
+          }, 200)
+        }, 0)
+      }
     })
   }
 
@@ -683,8 +728,17 @@ export default class Application extends EventEmitter {
   autoSyncTrackers () {
     const enable = this.configManager.getUserConfig('auto-sync-tracker')
     const lastTime = this.configManager.getUserConfig('last-sync-tracker-time')
-    const result = checkIsNeedRun(enable, lastTime, AUTO_SYNC_TRACKER_INTERVAL)
-    logger.info('[Motrix] auto sync tracker checkIsNeedRun:', result)
+
+    // 获取用户自定义的更新间隔和具体时间
+    const customInterval = this.configManager.getUserConfig('auto-sync-tracker-interval')
+    const customTime = this.configManager.getUserConfig('auto-sync-tracker-time')
+
+    // 使用默认间隔或用户自定义间隔
+    const interval = customInterval ? customInterval * ONE_HOUR : AUTO_SYNC_TRACKER_INTERVAL
+
+    // 使用新的高级检查函数
+    const result = checkIsNeedRunAdvanced(enable, lastTime, interval, customTime)
+    logger.info('[Motrix] auto sync tracker checkIsNeedRunAdvanced:', result, 'interval:', interval, 'customTime:', customTime)
     if (!result) {
       return
     }
