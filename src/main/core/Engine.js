@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { existsSync, writeFile, unlink, chmodSync } from 'node:fs'
+import { existsSync, writeFile, unlink } from 'node:fs'
 import { resolve } from 'node:path'
 import is from 'electron-is'
 
@@ -40,13 +40,6 @@ export default class Engine {
     }
 
     const binPath = this.getEngineBinPath()
-    if (platform === 'linux') {
-      try {
-        chmodSync(binPath, 0o755)
-      } catch (e) {
-        logger.warn('[Motrix] chmod engine bin failed:', e && e.message ? e.message : e)
-      }
-    }
     const args = this.getStartArgs()
 
     const enableEngineLogs = is.dev() || is.linux()

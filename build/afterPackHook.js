@@ -102,5 +102,18 @@ DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
     fs.chmodSync(wrapperPath, 0o755)
   } catch (e) {}
 
+  const engineDir = join(dirname, 'resources', 'engine')
+  if (fs.existsSync(engineDir)) {
+    const files = fs.readdirSync(engineDir)
+    files.forEach((file) => {
+      if (file.startsWith('aria2c')) {
+        const target = join(engineDir, file)
+        try {
+          fs.chmodSync(target, 0o755)
+        } catch (e) {}
+      }
+    })
+  }
+
   chdir(originalDir)
 }
