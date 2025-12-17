@@ -55,6 +55,9 @@ export const extractSpeedUnit = (speed = '') => {
 }
 
 export const bitfieldToPercent = (text) => {
+  if (!text || typeof text !== 'string') {
+    return '0'
+  }
   const len = text.length - 1
   let p
   let one = 0
@@ -69,6 +72,9 @@ export const bitfieldToPercent = (text) => {
 }
 
 export const bitfieldToGraphic = (text) => {
+  if (!text || typeof text !== 'string') {
+    return ''
+  }
   const len = text.length
   let result = ''
   for (let i = 0; i < len; i++) {

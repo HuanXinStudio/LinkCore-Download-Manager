@@ -65,7 +65,19 @@ export const getDevEnginePath = (platform, arch) => {
 }
 
 export const getProdEnginePath = () => {
-  return resolve(app.getAppPath(), '../engine')
+  const base = process.resourcesPath || app.getAppPath()
+  const primary = resolve(base, './engine')
+  const secondary = resolve(base, '../engine')
+
+  if (existsSync(primary)) {
+    return primary
+  }
+
+  if (existsSync(secondary)) {
+    return secondary
+  }
+
+  return primary
 }
 
 export const getEnginePath = (platform, arch) => {
