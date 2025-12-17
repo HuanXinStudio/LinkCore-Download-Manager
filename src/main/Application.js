@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { spawn } from 'node:child_process'
 import { readFile, unlink } from 'node:fs'
 import { extname, basename } from 'node:path'
 import { app, shell, dialog, ipcMain } from 'electron'
@@ -47,6 +48,8 @@ export default class Application extends EventEmitter {
     super()
     this.isReady = false
     this._updateStatusInitialized = false
+    this._taskPlanTriggered = false
+    this._taskPlanCheckTimer = null
     this.init()
   }
 
@@ -160,9 +163,42 @@ export default class Application extends EventEmitter {
             try {
               const payload = body ? JSON.parse(body) : {}
               const { url, referer, headers } = payload
-              if (!url || !/^https?:/i.test(url)) {
+              const downloadUrl = `${url || ''}`.trim()
+              if (!downloadUrl || !/^https?:/i.test(downloadUrl)) {
                 res.writeHead(400, { 'Content-Type': 'application/json' })
                 res.end(JSON.stringify({ ok: false, error: 'invalid url' }))
+                return
+              }
+
+              const normalizeUri = (u) => `${u || ''}`.trim()
+              const taskHasUri = (task, target) => {
+                if (!task || !Array.isArray(task.files) || task.files.length !== 1) {
+                  return false
+                }
+                const file = task.files[0]
+                if (!file || !Array.isArray(file.uris) || file.uris.length === 0) {
+                  return false
+                }
+                return file.uris.some(it => normalizeUri(it && it.uri) === target)
+              }
+
+              const existing = []
+              const active = await this.engineClient.call('tellActive')
+              if (Array.isArray(active) && active.length > 0) {
+                existing.push(...active)
+              }
+              const waiting = await this.engineClient.call('tellWaiting', 0, 1000)
+              if (Array.isArray(waiting) && waiting.length > 0) {
+                existing.push(...waiting)
+              }
+              const stopped = await this.engineClient.call('tellStopped', 0, 10000)
+              if (Array.isArray(stopped) && stopped.length > 0) {
+                existing.push(...stopped)
+              }
+
+              if (existing.some(t => taskHasUri(t, downloadUrl))) {
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ ok: true, duplicate: true }))
                 return
               }
 
@@ -207,7 +243,7 @@ export default class Application extends EventEmitter {
               if (referer) {
                 options.referer = referer
               } else if (!hasRefererInHeaders) {
-                const inferredReferer = inferRefererFromUrl(url)
+                const inferredReferer = inferRefererFromUrl(downloadUrl)
                 if (inferredReferer) {
                   options.referer = inferredReferer
                 }
@@ -239,7 +275,7 @@ export default class Application extends EventEmitter {
               const authorization = headerMap.authorization
               const taskPayload = {
                 type: ADD_TASK_TYPE.URI,
-                uri: url,
+                uri: downloadUrl,
                 fromBrowserExtension: true
               }
               if (options.referer) {
@@ -463,7 +499,22 @@ export default class Application extends EventEmitter {
   async stopEngine () {
     logger.info('[Motrix] stopEngine===>')
     try {
-      await this.engineClient.shutdown({ force: true })
+      const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+      await Promise.race([
+        this.engineClient.call('saveSession'),
+        wait(1200)
+      ])
+
+      const graceful = await Promise.race([
+        this.engineClient.shutdown({ force: false }),
+        wait(1500)
+      ])
+      if (graceful !== 'OK') {
+        await Promise.race([
+          this.engineClient.shutdown({ force: true }),
+          wait(1200)
+        ])
+      }
       logger.info('[Motrix] stopEngine.setImmediate===>')
       setImmediate(() => {
         this.engine.stop()
@@ -1236,6 +1287,162 @@ export default class Application extends EventEmitter {
     if (!isEmpty(user)) {
       console.info('[Motrix] main save user config: ', user)
       this.configManager.setUserConfig(user)
+      if (Object.prototype.hasOwnProperty.call(user, 'task-plan-action')) {
+        this._taskPlanTriggered = false
+        this.scheduleCheckTaskPlan(0)
+      }
+    }
+  }
+
+  getTaskPlanAction () {
+    const raw = this.configManager.getUserConfig('task-plan-action', 'none')
+    const action = `${raw || 'none'}`
+    if (['none', 'shutdown', 'sleep', 'quit'].includes(action)) {
+      return action
+    }
+    return 'none'
+  }
+
+  isActiveTaskDownloaded (task = {}) {
+    const total = Number(task.totalLength || 0)
+    const completed = Number(task.completedLength || 0)
+    if (total <= 0) {
+      return false
+    }
+    return completed >= total
+  }
+
+  scheduleCheckTaskPlan (delay = 800) {
+    const action = this.getTaskPlanAction()
+    if (action === 'none') {
+      if (this._taskPlanCheckTimer) {
+        clearTimeout(this._taskPlanCheckTimer)
+        this._taskPlanCheckTimer = null
+      }
+      return
+    }
+
+    if (this._taskPlanCheckTimer) {
+      clearTimeout(this._taskPlanCheckTimer)
+    }
+
+    this._taskPlanCheckTimer = setTimeout(() => {
+      this._taskPlanCheckTimer = null
+      this.checkTaskPlan().catch((e) => {
+        this._taskPlanTriggered = false
+        logger.warn('[Motrix] checkTaskPlan failed:', e && e.message ? e.message : e)
+      })
+    }, delay)
+  }
+
+  async checkTaskPlan () {
+    try {
+      const action = this.getTaskPlanAction()
+      if (action === 'none') {
+        this._taskPlanTriggered = false
+        return
+      }
+
+      const active = await this.engineClient.call('tellActive')
+      const activeList = Array.isArray(active) ? active : []
+      const hasBlockingActive = activeList.some(t => {
+        const isBt = !!(t && t.bittorrent)
+        if (isBt && this.isActiveTaskDownloaded(t)) {
+          return false
+        }
+        return true
+      })
+      if (hasBlockingActive) {
+        this._taskPlanTriggered = false
+        this.scheduleCheckTaskPlan(2000)
+        return
+      }
+
+      const waiting = await this.engineClient.call('tellWaiting', 0, 1000)
+      const waitingList = Array.isArray(waiting) ? waiting : []
+      if (waitingList.length > 0) {
+        this._taskPlanTriggered = false
+        this.scheduleCheckTaskPlan(2000)
+        return
+      }
+
+      const stopped = await this.engineClient.call('tellStopped', 0, 10000)
+      const stoppedList = Array.isArray(stopped) ? stopped : []
+
+      if (activeList.length + waitingList.length + stoppedList.length === 0) {
+        this._taskPlanTriggered = false
+        this.scheduleCheckTaskPlan(2000)
+        return
+      }
+
+      const hasPaused = stoppedList.some(t => `${t.status}` === 'paused')
+      if (hasPaused) {
+        this._taskPlanTriggered = false
+        this.scheduleCheckTaskPlan(2000)
+        return
+      }
+
+      if (this._taskPlanTriggered) {
+        return
+      }
+      this._taskPlanTriggered = true
+      await this.engineClient.call('saveSession')
+      this.executeTaskPlanAction(action)
+    } catch (e) {
+      this._taskPlanTriggered = false
+      throw e
+    }
+  }
+
+  spawnDetached (command, args = []) {
+    try {
+      spawn(command, args, {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true
+      }).unref()
+      return true
+    } catch (e) {
+      logger.warn('[Motrix] spawnDetached failed:', e && e.message ? e.message : e)
+      return false
+    }
+  }
+
+  executeTaskPlanAction (action) {
+    if (action === 'quit') {
+      this.configManager.setUserConfig('task-plan-action', 'none')
+      this.quit()
+      return
+    }
+
+    const platform = process.platform
+    let ok = false
+
+    if (action === 'shutdown') {
+      if (platform === 'win32') {
+        ok = this.spawnDetached('shutdown', ['/s', '/t', '0'])
+      } else if (platform === 'darwin') {
+        ok = this.spawnDetached('osascript', ['-e', 'tell application "System Events" to shut down'])
+      } else {
+        ok = this.spawnDetached('systemctl', ['poweroff'])
+      }
+    }
+
+    if (action === 'sleep') {
+      if (platform === 'win32') {
+        ok = this.spawnDetached('rundll32.exe', ['powrprof.dll,SetSuspendState', '0,1,0'])
+      } else if (platform === 'darwin') {
+        ok = this.spawnDetached('pmset', ['sleepnow'])
+      } else {
+        ok = this.spawnDetached('systemctl', ['suspend'])
+      }
+    }
+
+    if (ok) {
+      this.configManager.setUserConfig('task-plan-action', 'none')
+      this.quit()
+    } else {
+      this._taskPlanTriggered = false
     }
   }
 
@@ -1491,6 +1698,7 @@ export default class Application extends EventEmitter {
       this.autoResumeTask()
 
       this.adjustMenu()
+      this.scheduleCheckTaskPlan(2000)
 
       // 监听主窗口加载完成事件，确保前端组件已挂载后再发送更新状态
       const mainWindow = this.windowManager.getWindow('index')
@@ -1519,8 +1727,10 @@ export default class Application extends EventEmitter {
       this.trayManager.handleDownloadStatusChange(downloading)
       if (downloading) {
         this.energyManager.startPowerSaveBlocker()
+        this._taskPlanTriggered = false
       } else {
         this.energyManager.stopPowerSaveBlocker()
+        this.scheduleCheckTaskPlan()
       }
     })
 
@@ -1536,6 +1746,7 @@ export default class Application extends EventEmitter {
         return
       }
       app.addRecentDocument(path)
+      this.scheduleCheckTaskPlan()
     })
 
     if (this.configManager.userConfig.get('show-progress-bar')) {

@@ -45,7 +45,8 @@ const userKeys = [
   'extension-silent-download',
   'extension-skip-file-extensions',
   'extension-shift-toggle-enabled',
-  'subnav-mode'
+  'subnav-mode',
+  'task-plan-action'
 ]
 
 const systemKeys = [

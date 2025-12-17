@@ -639,10 +639,10 @@
     </el-dialog>
 
     <el-dialog
-      custom-class="tab-title-dialog"
+      custom-class="tracker-source-dialog"
       width="640px"
       :visible.sync="trackerSourceConfigVisible"
-      :show-close="true"
+      :show-close="false"
       :append-to-body="true"
     >
       <div style="display:flex; align-items:center; justify-content:center; padding:8px;">
@@ -651,15 +651,18 @@
           :placeholder="$t('preferences.tracker-source-input-placeholder')"
           clearable
           style="max-width:480px;"
-        />
-        <el-button
-          type="primary"
-          size="mini"
-          @click="addTrackerSourceFromInput"
-          style="margin-left:8px;"
-        >{{ $t('app.submit') }}</el-button>
+        >
+          <template slot="prepend">
+            <button type="button" class="tracker-source-close-btn" @click="trackerSourceConfigVisible = false">
+              <i class="el-icon-close"></i>
+            </button>
+          </template>
+        </el-input>
       </div>
     </el-dialog>
+    <div v-if="trackerSourceConfigVisible" class="mo-tracker-source-submit">
+      <el-button type="primary" @click="addTrackerSourceFromInput">{{ $t('app.submit') }}</el-button>
+    </div>
 
     </el-main>
   </el-container>
@@ -2088,6 +2091,50 @@
     pointer-events: none;
     text-decoration: none;
   }
+}
+
+.el-dialog.tracker-source-dialog {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.el-dialog.tracker-source-dialog .el-dialog__header {
+  display: none;
+}
+
+.el-dialog.tracker-source-dialog .el-dialog__body {
+  padding: 0;
+}
+
+.el-dialog.tracker-source-dialog .el-input-group__prepend {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.el-dialog.tracker-source-dialog .el-input__inner {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.tracker-source-close-btn {
+  width: 40px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  color: #606266;
+}
+
+.mo-tracker-source-submit {
+  position: fixed;
+  right: 14px;
+  bottom: 24px;
+  z-index: 3001;
 }
 
 .el-dialog.aria2conf-editor-dialog {

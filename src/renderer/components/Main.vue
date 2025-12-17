@@ -2,7 +2,37 @@
   <el-container id="container">
     <router-view />
     <mo-floating-bar />
-    <mo-speedometer />
+    <el-tooltip effect="dark" content="任务计划" placement="top" :open-delay="500">
+      <button
+        class="mo-task-plan"
+        :class="{ 'is-planned': isTaskPlanPlanned }"
+        type="button"
+        @click="onTaskPlanClick"
+      >
+        <mo-icon name="task-plan" width="20" height="20" />
+      </button>
+    </el-tooltip>
+    <el-dialog
+      title="任务计划"
+      :visible.sync="taskPlanVisible"
+      width="360px"
+      custom-class="task-plan-dialog"
+      append-to-body
+    >
+      <el-form label-position="top">
+        <el-form-item>
+          <el-select v-model="taskPlanAction" placeholder="请选择计划">
+            <el-option label="电脑关机" value="shutdown" />
+            <el-option label="电脑休眠" value="sleep" />
+            <el-option label="退出程序" value="quit" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+    </el-dialog>
+    <div v-if="taskPlanVisible" class="mo-task-plan-save">
+      <el-button type="primary" :disabled="!taskPlanAction" @click="saveTaskPlan">{{ $t('app.save') }}</el-button>
+    </div>
+    <mo-speedometer :class="{ 'is-shifted': hasModalMaskVisible }" />
     <mo-add-task :visible="addTaskVisible" :type="addTaskType" />
     <mo-task-detail
       :visible="taskDetailVisible"
@@ -53,6 +83,7 @@
   import TaskDetail from '@/components/TaskDetail/Index'
   import Dragger from '@/components/Dragger/Index'
   import '@/components/Icons/menu-task'
+  import '@/components/Icons/task-plan'
   import '@/components/Icons/menu-preference'
 
   export default {
@@ -63,6 +94,13 @@
       [AddTask.name]: AddTask,
       [TaskDetail.name]: TaskDetail,
       [Dragger.name]: Dragger
+    },
+    data () {
+      return {
+        taskPlanVisible: false,
+        taskPlanAction: '',
+        hasModalMaskVisible: false
+      }
     },
     computed: {
       ...mapState('app', {
@@ -76,24 +114,186 @@
         currentTaskItem: state => state.currentTaskItem,
         currentTaskFiles: state => state.currentTaskFiles,
         currentTaskPeers: state => state.currentTaskPeers
-      })
+      }),
+      ...mapState('preference', {
+        taskPlanActionFromConfig: state => (state.config && state.config.taskPlanAction) || 'none'
+      }),
+      isTaskPlanPlanned () {
+        return (this.taskPlanActionFromConfig || 'none') !== 'none'
+      }
+    },
+    watch: {
+      taskPlanActionFromConfig () {
+        if (!this.taskPlanVisible) {
+          this.taskPlanAction = this.normalizeTaskPlanAction(this.taskPlanActionFromConfig)
+        }
+      }
     },
     methods: {
+      updateModalMaskVisible () {
+        try {
+          this.hasModalMaskVisible = !!document.body.querySelector('.v-modal')
+        } catch (e) {
+          this.hasModalMaskVisible = false
+        }
+      },
+      normalizeTaskPlanAction (action) {
+        const v = `${action || ''}`
+        if (['shutdown', 'sleep', 'quit'].includes(v)) {
+          return v
+        }
+        return ''
+      },
       nav (page) {
         this.$router.push({
           path: page
         }).catch(err => {
           console.log(err)
         })
+      },
+      onTaskPlanClick () {
+        if (this.isTaskPlanPlanned) {
+          this.$store.dispatch('preference/save', { taskPlanAction: 'none' })
+          this.taskPlanAction = 'none'
+          this.taskPlanVisible = false
+          this.$msg.success('已取消任务计划')
+          return
+        }
+        this.taskPlanAction = this.normalizeTaskPlanAction(this.taskPlanActionFromConfig)
+        this.taskPlanVisible = true
+      },
+      saveTaskPlan () {
+        const action = this.normalizeTaskPlanAction(this.taskPlanAction)
+        if (!action) {
+          this.$msg.warning('请选择计划')
+          return
+        }
+        this.$store.dispatch('preference/save', { taskPlanAction: action })
+        this.taskPlanVisible = false
+        const label = {
+          shutdown: '电脑关机',
+          sleep: '电脑休眠',
+          quit: '退出程序'
+        }[action] || '退出程序'
+        this.$msg.success(`已设置：${label}`)
+      }
+    },
+    mounted () {
+      this.updateModalMaskVisible()
+      if (typeof MutationObserver === 'undefined') {
+        return
+      }
+
+      this._modalObserver = new MutationObserver(() => {
+        this.updateModalMaskVisible()
+      })
+
+      try {
+        this._modalObserver.observe(document.body, { childList: true, subtree: true })
+      } catch (e) {}
+    },
+    destroyed () {
+      if (this._modalObserver) {
+        try {
+          this._modalObserver.disconnect()
+        } catch (e) {}
+        this._modalObserver = null
       }
     }
   }
 </script>
 
 <style lang="scss">
+  @import '~@/components/Theme/Variables';
+  @import '~@/components/Theme/Light/Variables';
+
+  .mo-task-plan {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(87px);
+    z-index: 20;
+    height: 40px;
+    width: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 100px;
+    border: 1px solid $--speedometer-border-color;
+    background-color: $--floating-bar-background;
+    opacity: 0.5;
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 0;
+    line-height: 0;
+
+    &:hover {
+      opacity: 1;
+      border-color: $--speedometer-hover-border-color;
+    }
+
+    svg {
+      display: block;
+      color: $--floating-bar-item-color;
+    }
+
+    &.is-planned {
+      opacity: 1;
+      border-color: #c2e7b0;
+      animation: pulse-green 1s infinite;
+    }
+
+    &.is-planned:hover {
+      border-color: #a5d6a7;
+      opacity: 1;
+    }
+  }
+
+  .el-dialog.task-plan-dialog {
+    max-width: 360px;
+    min-width: 320px;
+  }
+
+  .el-dialog.task-plan-dialog .el-select {
+    width: 100%;
+  }
+
+  .mo-task-plan-save {
+    position: fixed;
+    right: 14px;
+    bottom: 24px;
+    z-index: 3001;
+  }
+
+  .mo-speedometer.is-shifted {
+    bottom: 78px;
+  }
+
+  .theme-dark .mo-task-plan.is-planned {
+    border-color: #a5d6a7;
+  }
+
+  @keyframes pulse-green {
+    0% {
+      box-shadow: 0 0 0 0 rgba(103, 194, 58, 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 5px rgba(103, 194, 58, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(103, 194, 58, 0);
+    }
+  }
+
   .mo-speedometer {
     position: fixed;
-    right: 16px;
+    right: 14px;
     bottom: 24px;
     z-index: 20;
   }

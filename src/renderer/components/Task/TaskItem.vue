@@ -113,7 +113,7 @@
   .task-name {
   color: #505753;
   margin-bottom: 1.5rem;
-  margin-right: 200px;
+  margin-right: 170px;
   word-break: break-all;
   min-height: 26px;
   &> span {

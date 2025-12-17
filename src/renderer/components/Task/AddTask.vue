@@ -68,12 +68,13 @@
       </el-tabs>
       <el-row :gutter="12">
 
-        <el-col :span="9" :xs="24">
+        <el-col :span="24" :xs="24">
           <el-form-item
             :label="`${$t('task.task-split')}: `"
             :label-width="formLabelWidth"
           >
             <el-input-number
+              class="task-split-input"
               v-model="form.split"
               controls-position="right"
               :min="1"
@@ -853,6 +854,9 @@
     user-select: none;
   }
   .el-input-number.el-input-number--mini {
+    width: 100%;
+  }
+  .task-split-input.el-input-number {
     width: 100%;
   }
   .help-link {

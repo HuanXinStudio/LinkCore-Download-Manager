@@ -150,7 +150,8 @@ export default class ConfigManager {
         'extension-intercept-all-downloads': false,
         'extension-silent-download': false,
         'extension-skip-file-extensions': '',
-        'extension-shift-toggle-enabled': false
+        'extension-shift-toggle-enabled': false,
+        'task-plan-action': 'none'
       }
       /* eslint-enable quote-props */
     })

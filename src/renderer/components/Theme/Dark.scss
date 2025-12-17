@@ -496,6 +496,20 @@
     }
   }
 
+  .mo-task-plan {
+    background-color: $--dk-floating-bar-background;
+    border-color: $--dk-speedometer-border-color;
+    &:hover {
+      border-color: $--dk-speedometer-hover-border-color;
+    }
+    .mo-task-plan__text {
+      color: $--dk-font-color-base;
+    }
+    svg {
+      color: $--dk-floating-bar-item-color;
+    }
+  }
+
   /* Popover */
   .el-popover {
     background-color: $--dk-popover-background;
