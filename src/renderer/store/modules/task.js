@@ -278,6 +278,7 @@ const actions = {
     // Handle downloading file suffix
     const config = rootState.preference.config || {}
     const suffix = config.downloadingFileSuffix
+    const normalizedOptions = options ? { ...options } : {}
     const safeGetNameFromUri = (uri) => {
       try {
         return getFileNameFromFile({ uris: [{ uri }] })
@@ -286,7 +287,17 @@ const actions = {
       }
     }
 
-    const shouldDeriveOutsForSuffix = !!(suffix && Array.isArray(uris) && uris.length > 0 && (!Array.isArray(outs) || outs.length === 0))
+    const hasOuts = Array.isArray(outs) && outs.length > 0
+    const hasSingleOptionOut = !!(Array.isArray(uris) && uris.length === 1 && normalizedOptions && typeof normalizedOptions.out === 'string' && normalizedOptions.out.trim() !== '')
+
+    if (suffix && hasSingleOptionOut) {
+      const onlyUri = uris[0]
+      if (onlyUri && !`${onlyUri}`.startsWith('magnet:') && !normalizedOptions.out.endsWith(suffix)) {
+        normalizedOptions.out = `${normalizedOptions.out}${suffix}`
+      }
+    }
+
+    const shouldDeriveOutsForSuffix = !!(suffix && Array.isArray(uris) && uris.length > 0 && !hasOuts && !hasSingleOptionOut)
     const baseOuts = shouldDeriveOutsForSuffix
       ? uris.map((uri) => {
         if (!uri || `${uri}`.startsWith('magnet:')) {
@@ -312,7 +323,7 @@ const actions = {
       })
     }
 
-    return api.addUri({ uris, outs: newOuts, options, dirs })
+    return api.addUri({ uris, outs: newOuts, options: normalizedOptions, dirs })
       .then((res) => {
         if (Array.isArray(res)) {
           const gids = res.map(r => r && r[0]).filter(Boolean)

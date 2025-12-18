@@ -208,13 +208,12 @@
           })
       },
       handleDownloadComplete (task, isBT) {
-        const finalPath = this.removeDownloadingSuffix(task)
+        const cfg = this.$store.state.preference.config || {}
+        const path = getTaskActualPath(task, cfg)
+        const finalPath = isBT ? path : this.removeDownloadingSuffix(task, path, cfg)
 
         this.$store.dispatch('task/saveSession')
         this.persistAverageSpeedToHistory(task)
-
-        const cfg = this.$store.state.preference.config || {}
-        const path = getTaskActualPath(task, cfg)
         try {
           const gid = task && task.gid ? `${task.gid}` : ''
           if (gid) {
@@ -235,8 +234,9 @@
             }
           }
         } catch (_) {}
-        this.showTaskCompleteNotify(task, isBT, path)
-        this.$electron.ipcRenderer.send('event', 'task-download-complete', task, path)
+        const notifyPath = finalPath || path
+        this.showTaskCompleteNotify(task, isBT, notifyPath)
+        this.$electron.ipcRenderer.send('event', 'task-download-complete', task, notifyPath)
 
         this.setFileMtimeOnComplete(task, finalPath)
 
@@ -333,18 +333,15 @@
         createCategoryDirectory(categorizedInfo.categorizedDir)
       },
 
-      removeDownloadingSuffix (task) {
-        // 获取下载中文件后缀配置
-        const downloadingFileSuffix = this.$store.state.preference.config.downloadingFileSuffix
+      removeDownloadingSuffix (task, manualPath = '', preferenceConfig = null) {
+        const cfg = preferenceConfig || this.$store.state.preference.config || {}
+        const downloadingFileSuffix = cfg.downloadingFileSuffix || ''
 
-        // 获取任务完整路径
-        const currentPath = getTaskFullPath(task)
-
-        if (!downloadingFileSuffix) {
+        const currentPath = manualPath || getTaskActualPath(task, cfg) || getTaskFullPath(task)
+        if (!currentPath || !downloadingFileSuffix) {
           return currentPath
         }
 
-        // 如果文件有下载中后缀，则移除后缀
         if (currentPath.endsWith(downloadingFileSuffix)) {
           const originalPath = currentPath.slice(0, -downloadingFileSuffix.length)
           // 尝试重命名
@@ -363,7 +360,6 @@
           // 如果都不存在，假设原路径是目标路径
           return originalPath
         } else {
-          // 检查是否有带后缀的文件存在（可能文件已经被重命名）
           const suffixedPath = currentPath + downloadingFileSuffix
           if (existsSync(suffixedPath)) {
             const ok = this.renamePreserveTimes(suffixedPath, currentPath)

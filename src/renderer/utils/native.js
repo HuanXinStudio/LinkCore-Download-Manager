@@ -2,6 +2,7 @@ import { access, constants, existsSync } from 'node:fs'
 import { resolve, basename, dirname, isAbsolute } from 'node:path'
 import { shell, nativeTheme } from '@electron/remote'
 import { Message } from 'element-ui'
+import api from '@/api'
 
 import {
   getFileNameFromFile,
@@ -149,15 +150,33 @@ export const moveTaskFilesToTrash = async (task, downloadingFileSuffix = '', pre
     return true
   }
 
-  const { dir } = task
-  const path = getTaskFullPath(task)
-  if (!path || dir === path) {
+  const config = preferenceConfig || {}
+  const suffix = downloadingFileSuffix || config.downloadingFileSuffix || ''
+  const taskDir = task && task.dir ? resolve(`${task.dir}`) : ''
+  let path = getTaskFullPath(task)
+
+  if (!path || (taskDir && resolve(path) === taskDir)) {
+    try {
+      const gid = task && task.gid ? `${task.gid}` : ''
+      if (gid) {
+        const opt = await api.getOption({ gid })
+        const dirFromOpt = opt && opt.dir ? resolve(`${opt.dir}`) : taskDir
+        const outFromOpt = opt && opt.out ? `${opt.out}` : ''
+        const nameFallback = task && task.name ? `${task.name}` : ''
+        if (dirFromOpt && outFromOpt) {
+          path = resolve(dirFromOpt, outFromOpt)
+        } else if (dirFromOpt && nameFallback) {
+          path = resolve(dirFromOpt, nameFallback)
+        }
+      }
+    } catch (_) {}
+  }
+
+  if (!path || (taskDir && resolve(path) === taskDir)) {
     console.warn('[Motrix] Invalid file path for task, skip deleting files')
     return true
   }
 
-  const config = preferenceConfig || {}
-  const suffix = downloadingFileSuffix || config.downloadingFileSuffix || ''
   const candidates = getPathCandidates(path, suffix, config)
 
   for (const p of candidates) {
