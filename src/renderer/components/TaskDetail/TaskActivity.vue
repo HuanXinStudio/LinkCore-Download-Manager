@@ -196,7 +196,9 @@
         if (this.speedSamples.length === 0) {
           return 0
         }
-        const validSamples = this.speedSamples.filter(s => typeof s === 'number' && s >= 0)
+        const validSamples = this.speedSamples
+          .map(s => Number(s))
+          .filter(s => Number.isFinite(s) && s >= 0)
         if (validSamples.length === 0) {
           return 0
         }
@@ -204,7 +206,9 @@
         return Math.round(sum / validSamples.length)
       },
       speedSampleCount () {
-        return this.speedSamples.filter(s => typeof s === 'number' && s > 0).length
+        return this.speedSamples
+          .map(s => Number(s))
+          .filter(s => Number.isFinite(s) && s > 0).length
       }
     },
     filters: {
@@ -215,8 +219,9 @@
       'task.downloadSpeed': {
         handler (newSpeed) {
           // 采样当前下载速度
-          if (typeof newSpeed === 'number' && newSpeed >= 0) {
-            this.addSpeedSample(newSpeed)
+          const speed = Number(newSpeed)
+          if (Number.isFinite(speed) && speed >= 0) {
+            this.addSpeedSample(speed)
           }
         },
         immediate: true
@@ -224,22 +229,30 @@
       'task.completedLength': {
         handler (newLength, oldLength) {
           // 检测下载开始（仅在未记录起始时间时）
-          if (newLength > 0 && !this.downloadStartTime) {
+          const length = Number(newLength)
+          if (Number.isFinite(length) && length > 0 && !this.downloadStartTime) {
             this.downloadStartTime = Date.now()
-            this.initialCompletedLength = newLength
+            this.initialCompletedLength = length
           }
         },
         immediate: true
       },
       'task.status': {
         handler (newStatus, oldStatus) {
-          if (oldStatus === TASK_STATUS.ACTIVE && newStatus !== TASK_STATUS.ACTIVE && this.downloadStartTime && this.task && this.task.completedLength > this.initialCompletedLength) {
+          const currentLength = Number(this.task && this.task.completedLength ? this.task.completedLength : 0)
+          if (
+            oldStatus === TASK_STATUS.ACTIVE &&
+            newStatus !== TASK_STATUS.ACTIVE &&
+            this.downloadStartTime &&
+            Number.isFinite(currentLength) &&
+            currentLength > this.initialCompletedLength
+          ) {
             this.downloadEndTime = Date.now()
           }
           if (newStatus === TASK_STATUS.ACTIVE && oldStatus !== TASK_STATUS.ACTIVE) {
             this.speedSamples = []
             this.downloadStartTime = Date.now()
-            this.initialCompletedLength = this.task ? this.task.completedLength : 0
+            this.initialCompletedLength = Number(this.task ? this.task.completedLength : 0) || 0
             this.downloadEndTime = null
           }
         }
@@ -258,9 +271,10 @@
         this.updateGraphicWidth()
       })
       // 初始化记录当前已下载量（作为基准线）
-      if (this.task && this.task.completedLength > 0) {
+      const initLength = Number(this.task && this.task.completedLength ? this.task.completedLength : 0)
+      if (Number.isFinite(initLength) && initLength > 0) {
         this.downloadStartTime = Date.now()
-        this.initialCompletedLength = this.task.completedLength
+        this.initialCompletedLength = initLength
       }
     },
     methods: {

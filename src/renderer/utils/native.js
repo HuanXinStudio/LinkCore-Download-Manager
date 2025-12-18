@@ -1,5 +1,5 @@
 import { access, constants, existsSync } from 'node:fs'
-import { resolve, basename, dirname } from 'node:path'
+import { resolve, basename, dirname, isAbsolute } from 'node:path'
 import { shell, nativeTheme } from '@electron/remote'
 import { Message } from 'element-ui'
 
@@ -37,8 +37,8 @@ export const openItem = async (fullPath) => {
 }
 
 export const getTaskFullPath = (task) => {
-  const { dir, files, bittorrent } = task
-  let result = resolve(dir)
+  const { dir, files, bittorrent } = task || {}
+  let result = resolve(dir || '')
 
   // Magnet link task
   if (isMagnetTask(task)) {
@@ -50,8 +50,11 @@ export const getTaskFullPath = (task) => {
     return result
   }
 
-  const [file] = files
-  const path = file.path ? resolve(file.path) : ''
+  const [file] = Array.isArray(files) ? files : []
+  const rawPath = file && file.path ? `${file.path}` : ''
+  const path = rawPath
+    ? (isAbsolute(rawPath) ? resolve(rawPath) : resolve(result, rawPath))
+    : ''
   let fileName = ''
 
   if (path) {

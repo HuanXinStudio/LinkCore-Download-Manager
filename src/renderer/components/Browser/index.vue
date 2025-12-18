@@ -1,10 +1,10 @@
 <template>
   <div ref="webviewViewport" class="webview-viewport">
-    <iframe
+    <webview
       class="mo-webview"
-      ref="iframe"
+      ref="webview"
       :src="src"
-    ></iframe>
+    ></webview>
   </div>
 </template>
 
@@ -25,18 +25,40 @@
     },
     data () {
       return {
-        loading: null
+        loading: null,
+        boundListeners: null
       }
     },
     computed: {
       isRenderer: () => is.renderer()
     },
     mounted () {
-      const { iframe } = this.$refs
+      const { webview } = this.$refs
+      if (!webview) return
 
-      iframe.addEventListener('did-start-loading', this.loadStart.bind(this))
-      iframe.addEventListener('did-stop-loading', this.loadStop.bind(this))
-      iframe.addEventListener('dom-ready', this.ready.bind(this))
+      this.boundListeners = {
+        loadStart: this.loadStart.bind(this),
+        loadStop: this.loadStop.bind(this),
+        ready: this.ready.bind(this)
+      }
+
+      webview.addEventListener('did-start-loading', this.boundListeners.loadStart)
+      webview.addEventListener('did-stop-loading', this.boundListeners.loadStop)
+      webview.addEventListener('dom-ready', this.boundListeners.ready)
+    },
+    beforeDestroy () {
+      const { webview } = this.$refs
+      const listeners = this.boundListeners
+      if (webview && listeners) {
+        webview.removeEventListener('did-start-loading', listeners.loadStart)
+        webview.removeEventListener('did-stop-loading', listeners.loadStop)
+        webview.removeEventListener('dom-ready', listeners.ready)
+      }
+      if (this.loading) {
+        try {
+          this.loading.close()
+        } catch (_) {}
+      }
     },
     methods: {
       loadStart () {
@@ -47,17 +69,22 @@
       },
       loadStop () {
         this.$nextTick(() => {
-          this.loading.close()
+          if (this.loading) {
+            this.loading.close()
+          }
         })
       },
       ready () {
-        const { iframe } = this.$refs
+        const { webview } = this.$refs
+        if (!webview) return
 
-        const wc = webContents.fromId(iframe.getWebContentsId())
-        wc.setWindowOpenHandler((event, url) => {
-          event.preventDefault()
-          this.$electron.ipcRenderer.send('command', 'application:open-external', url)
-        })
+        try {
+          const wc = webContents.fromId(webview.getWebContentsId())
+          wc.setWindowOpenHandler(({ url }) => {
+            this.$electron.ipcRenderer.send('command', 'application:open-external', url)
+            return { action: 'deny' }
+          })
+        } catch (_) {}
       }
     }
   }

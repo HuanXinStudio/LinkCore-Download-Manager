@@ -139,5 +139,13 @@ export default {
   'bt-download-complete-tips': '提示：你可以停止任務結束做種',
   'bt-stopping-seeding-tip': '停止做種中，需要些時間才能斷開連接，請稍候...',
   'download-fail-message': '{{taskName}} 下載失敗',
-  'download-fail-notify': '下載失敗'
+  'download-fail-notify': '下載失敗',
+  'verify-file': '校驗檔案',
+  'verify-start': '開始校驗檔案...',
+  'verify-no-files': '沒有可校驗的檔案',
+  'verify-missing-files': '有 {{count}} 個檔案不存在',
+  'verify-size-mismatch': '有 {{count}} 個檔案大小不一致',
+  'verify-success-multi': '校驗通過（已校驗 {{count}} 個檔案大小）',
+  'verify-success-sha256': '校驗通過，SHA-256 已複製：{{sha256}}',
+  'verify-hash-fail': '計算 SHA-256 失敗'
 }

@@ -14,7 +14,7 @@
 
   import { checkTaskIsBT, getTaskName, isMagnetTask } from '@shared/utils'
   import { existsSync, renameSync, mkdirSync, utimesSync, statSync } from 'node:fs'
-  import { dirname, basename } from 'path'
+  import { dirname, basename, resolve, isAbsolute } from 'node:path'
   import {
     autoCategorizeDownloadedFile,
     buildCategorizedPath,
@@ -420,6 +420,10 @@
 
         if (isBTTask) {
           const files = Array.isArray(task.files) ? task.files : []
+          const taskDir = task && task.dir ? resolve(task.dir) : ''
+          const btName = task && task.bittorrent && task.bittorrent.info && task.bittorrent.info.name
+            ? `${task.bittorrent.info.name}`
+            : ''
 
           files.forEach(file => {
             const total = Number(file.length || 0)
@@ -428,9 +432,29 @@
               return
             }
 
-            let filePath = file.path || ''
-            if (!filePath) {
+            const rawFilePath = file && file.path ? `${file.path}` : ''
+            if (!rawFilePath) {
               return
+            }
+
+            const candidates = []
+            if (isAbsolute(rawFilePath)) {
+              candidates.push(resolve(rawFilePath))
+            } else if (taskDir) {
+              candidates.push(resolve(taskDir, rawFilePath))
+              if (btName) {
+                candidates.push(resolve(taskDir, btName, rawFilePath))
+              }
+            }
+
+            let filePath = candidates.find(p => existsSync(p)) || ''
+            if (!filePath && downloadingFileSuffix) {
+              filePath = candidates
+                .map(p => `${p}${downloadingFileSuffix}`)
+                .find(p => existsSync(p)) || ''
+            }
+            if (!filePath) {
+              filePath = candidates[0] || ''
             }
 
             try {

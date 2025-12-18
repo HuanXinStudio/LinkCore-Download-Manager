@@ -202,5 +202,13 @@ export default {
   'trash': '移到回收站',
   'info': '详情',
   'reveal-in-folder': '在文件夹中显示',
-  'copy-link': '复制链接'
+  'copy-link': '复制链接',
+  'verify-file': '校验文件',
+  'verify-start': '开始校验文件...',
+  'verify-no-files': '没有可校验的文件',
+  'verify-missing-files': '有 {{count}} 个文件不存在',
+  'verify-size-mismatch': '有 {{count}} 个文件大小不一致',
+  'verify-success-multi': '校验通过（已校验 {{count}} 个文件大小）',
+  'verify-success-sha256': '校验通过，SHA-256 已复制：{{sha256}}',
+  'verify-hash-fail': '计算 SHA-256 失败'
 }

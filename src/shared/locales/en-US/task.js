@@ -201,6 +201,14 @@ export default {
   'stop': 'Stop',
   'trash': 'Move to Trash',
   'info': 'Details',
-  'reveal-in-folder': 'Reveal in Folder',
-  'copy-link': 'Copy Link'
+  'reveal-in-folder': 'Reveal In Folder',
+  'copy-link': 'Copy Link',
+  'verify-file': 'Verify Files',
+  'verify-start': 'Verifying files...',
+  'verify-no-files': 'No files to verify',
+  'verify-missing-files': '{{count}} file(s) are missing',
+  'verify-size-mismatch': '{{count}} file(s) size mismatch',
+  'verify-success-multi': 'Verification passed (checked {{count}} file size(s))',
+  'verify-success-sha256': 'Verification passed. SHA-256 copied: {{sha256}}',
+  'verify-hash-fail': 'Failed to calculate SHA-256'
 }

@@ -101,7 +101,7 @@
   &:hover {
     border-color: $--task-item-hover-border-color;
   }
-  .task-item-actions {
+  .task-item-actions-wrapper {
     position: absolute;
     top: 16px;
     right: 12px;

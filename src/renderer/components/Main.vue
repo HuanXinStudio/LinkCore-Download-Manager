@@ -32,7 +32,7 @@
     <div v-if="taskPlanVisible" class="mo-task-plan-save">
       <el-button type="primary" :disabled="!taskPlanAction" @click="saveTaskPlan">{{ $t('app.save') }}</el-button>
     </div>
-    <mo-speedometer :class="{ 'is-shifted': hasModalMaskVisible }" />
+    <mo-speedometer :class="{ 'is-shifted': isSpeedometerShifted }" />
     <mo-add-task :visible="addTaskVisible" :type="addTaskType" />
     <mo-task-detail
       :visible="taskDetailVisible"
@@ -120,6 +120,10 @@
       }),
       isTaskPlanPlanned () {
         return (this.taskPlanActionFromConfig || 'none') !== 'none'
+      },
+      isSpeedometerShifted () {
+        const { taskPlanVisible, addTaskVisible } = this
+        return !!(taskPlanVisible || addTaskVisible)
       }
     },
     watch: {
