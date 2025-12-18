@@ -1,6 +1,6 @@
 <p align="right"><a href="./README-CN.md">简体中文</a></p>
 
-# LinkCore Download ManagerIndie 
+# LinkCore Download Manager
 Maintained by Mo"moXC
 under HuanXinStudio
 
