@@ -1,7 +1,6 @@
 <p align="right"><a href="./README-CN.md">简体中文</a></p>
 
-# LinkCore Download Manager
-Maintained by **Mo"moXC**, under **HuanXinStudio**
+>Maintained by **Mo"moXC**, under **HuanXinStudio**
 
 <p align="center">
   <img src="./screenshots/屏幕截图 2025-12-09 052141.png" width="1100" alt="LinkCore Download Manager Logo" />
