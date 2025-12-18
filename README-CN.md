@@ -1,6 +1,7 @@
 <p align="right"><a href="./README.md">English</a>
 
 # LinkCore Download Manager（联芯下载管理器）
+本项目由 Mo"moXC 个人维护，隶属于 HuanXinStudio
 
 <p align="center">
   <img src="./screenshots/屏幕截图 2025-12-09 052141.png" width="1100" alt="LinkCore Download Manager Logo" />
