@@ -205,13 +205,27 @@
 
         // 如果有样本，计算当前样本的平均速度
         if (this.speedSamples.length > 0) {
-          const validSamples = this.speedSamples
-            .map(s => Number(s))
-            .filter(s => Number.isFinite(s) && s >= 0)
+          const normalized = this.speedSamples
+            .map(s => {
+              if (typeof s === 'number') {
+                const speed = Number(s)
+                if (!Number.isFinite(speed) || speed < 0) return null
+                return { bytes: speed, durationMs: 1000 }
+              }
+              if (!s || typeof s !== 'object') return null
+              const bytes = Number(s.bytes)
+              const durationMs = Number(s.durationMs)
+              if (!Number.isFinite(bytes) || bytes < 0) return null
+              if (!Number.isFinite(durationMs) || durationMs <= 0) return null
+              return { bytes, durationMs }
+            })
+            .filter(Boolean)
 
-          if (validSamples.length > 0) {
-            const sum = validSamples.reduce((a, b) => a + b, 0)
-            return Math.round(sum / validSamples.length)
+          if (normalized.length > 0) {
+            const totalBytes = normalized.reduce((sum, it) => sum + it.bytes, 0)
+            const totalDurationMs = normalized.reduce((sum, it) => sum + it.durationMs, 0)
+            const avg = totalDurationMs > 0 ? Math.round((totalBytes * 1000) / totalDurationMs) : 0
+            return avg
           }
         }
 
@@ -229,8 +243,20 @@
           return Number.isFinite(v) && v >= 0 ? v : 0
         }
         return this.speedSamples
-          .map(s => Number(s))
-          .filter(s => Number.isFinite(s) && s > 0).length
+          .map(s => {
+            if (typeof s === 'number') {
+              const speed = Number(s)
+              return Number.isFinite(speed) && speed > 0 ? speed : 0
+            }
+            if (!s || typeof s !== 'object') return 0
+            const bytes = Number(s.bytes)
+            const durationMs = Number(s.durationMs)
+            if (!Number.isFinite(bytes) || bytes < 0) return 0
+            if (!Number.isFinite(durationMs) || durationMs <= 0) return 0
+            const speed = (bytes * 1000) / durationMs
+            return Number.isFinite(speed) && speed > 0 ? speed : 0
+          })
+          .filter(v => v > 0).length
       }
     },
     filters: {
@@ -238,19 +264,6 @@
       timeFormat
     },
     watch: {
-      'task.downloadSpeed': {
-        handler (newSpeed) {
-          // 采样当前下载速度
-          if (!this.isActive) {
-            return
-          }
-          const speed = Number(newSpeed)
-          if (Number.isFinite(speed) && speed >= 0) {
-            this.addSpeedSample(speed)
-          }
-        },
-        immediate: true
-      },
       'task.completedLength': {
         handler (newLength, oldLength) {
           // 检测下载开始（仅在未记录起始时间时）
@@ -320,13 +333,6 @@
         const paddingLeft = parseInt(style.paddingLeft, 10)
         const paddingRight = parseInt(style.paddingRight, 10)
         return width - paddingLeft - paddingRight
-      },
-      addSpeedSample (speed) {
-        const gid = this.task && this.task.gid ? `${this.task.gid}` : ''
-        if (!gid) {
-          return
-        }
-        this.$store.dispatch('task/addTaskSpeedSample', { gid, sample: speed, maxSamples: 60 })
       },
       resetSpeedSamples () {
         const gid = this.task && this.task.gid ? `${this.task.gid}` : ''

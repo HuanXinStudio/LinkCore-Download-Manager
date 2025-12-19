@@ -31,7 +31,8 @@
         magnetAlertedSet: new Set(),
         dataAccessZeroMap: {},
         dataAccessLastCompletedMap: {},
-        pollingCount: 0
+        pollingCount: 0,
+        taskSpeedSampleBaseMap: {}
       }
     },
     computed: {
@@ -255,9 +256,28 @@
             return
           }
 
-          const numeric = samples.map(s => Number(s)).filter(s => Number.isFinite(s) && s >= 0)
-          const avg = numeric.length > 0 ? Math.round(numeric.reduce((a, b) => a + b, 0) / numeric.length) : 0
-          const count = samples.map(s => Number(s)).filter(s => Number.isFinite(s) && s > 0).length
+          const normalized = samples
+            .map(s => {
+              if (typeof s === 'number') {
+                const speed = Number(s)
+                if (!Number.isFinite(speed) || speed < 0) return null
+                return { bytes: speed, durationMs: 1000 }
+              }
+              if (!s || typeof s !== 'object') return null
+              const bytes = Number(s.bytes)
+              const durationMs = Number(s.durationMs)
+              if (!Number.isFinite(bytes) || bytes < 0) return null
+              if (!Number.isFinite(durationMs) || durationMs <= 0) return null
+              return { bytes, durationMs }
+            })
+            .filter(Boolean)
+
+          const totalBytes = normalized.reduce((sum, it) => sum + it.bytes, 0)
+          const totalDurationMs = normalized.reduce((sum, it) => sum + it.durationMs, 0)
+          const avg = totalDurationMs > 0 ? Math.round((totalBytes * 1000) / totalDurationMs) : 0
+          const count = normalized
+            .map(it => (it.durationMs > 0 ? (it.bytes * 1000) / it.durationMs : 0))
+            .filter(v => Number.isFinite(v) && v > 0).length
 
           taskHistory.updateTask(gid, { averageDownloadSpeed: avg, averageSpeedSampleCount: count }, task)
         } catch (_) {
@@ -624,6 +644,7 @@
         this.$store.dispatch('app/fetchGlobalStat')
         this.$store.dispatch('app/fetchProgress')
         this.$store.dispatch('task/fetchList').then(() => {
+          this.sampleAverageSpeedForActiveTasks()
           this.checkMagnetAlerts()
           this.checkDataAccessStatus()
         })
@@ -731,6 +752,56 @@
         list.forEach(task => {
           if (task.status === TASK_STATUS.ACTIVE) {
             this.persistAverageSpeedToHistory(task)
+          }
+        })
+      },
+      sampleAverageSpeedForActiveTasks () {
+        const list = this.$store.state.task.taskList || []
+        const activeGids = new Set()
+        const now = Date.now()
+        list.forEach(task => {
+          if (!task) {
+            return
+          }
+          if (task.status !== TASK_STATUS.ACTIVE) {
+            return
+          }
+          const gid = task.gid ? `${task.gid}` : ''
+          if (!gid) {
+            return
+          }
+          activeGids.add(gid)
+
+          const completed = Number(task.completedLength || 0)
+          if (!Number.isFinite(completed) || completed < 0) {
+            this.taskSpeedSampleBaseMap[gid] = { ts: now, completed: 0 }
+            return
+          }
+
+          const prev = this.taskSpeedSampleBaseMap[gid]
+          if (!prev || !Number.isFinite(prev.ts) || !Number.isFinite(prev.completed)) {
+            this.taskSpeedSampleBaseMap[gid] = { ts: now, completed }
+            return
+          }
+
+          const durationMs = now - prev.ts
+          const bytes = completed - prev.completed
+          if (!(durationMs > 0) || durationMs > 15000 || durationMs < 200 || bytes < 0) {
+            this.taskSpeedSampleBaseMap[gid] = { ts: now, completed }
+            return
+          }
+
+          this.taskSpeedSampleBaseMap[gid] = { ts: now, completed }
+          this.$store.dispatch('task/addTaskSpeedSample', {
+            gid,
+            sample: { bytes, durationMs },
+            maxSamples: 60
+          })
+        })
+
+        Object.keys(this.taskSpeedSampleBaseMap || {}).forEach(gid => {
+          if (!activeGids.has(gid)) {
+            delete this.taskSpeedSampleBaseMap[gid]
           }
         })
       },
