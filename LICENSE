@@ -1,7 +1,6 @@
 MIT License
 
-Copyright (c) 2025 LinkCore Download Manager Project
-Copyright (c) 2018-present Dr_rOot (Original Motrix Project)
+Copyright (c) 2025 Mo"moXC
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,14 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-**特别说明：**
-
-LinkCore Download Manager（联芯下载管理器）是基于 Motrix 开源项目的二次开发版本。
-原 Motrix 项目版权归 Dr_rOot 所有，遵循 MIT 许可证。
-
-本项目的修改和改进部分版权归 LinkCore Download Manager 项目所有，同样遵循 MIT 许可证。
-
-原项目地址：https://github.com/agalwood/Motrix
