@@ -29,7 +29,57 @@ export default class UpdateManager extends EventEmitter {
       checkEnable: this.options.autoCheck,
       userCheck: false
     }
+    this._autoCheckTimer = null
     this.init()
+  }
+
+  setAutoCheckEnabled (enabled) {
+    const next = !!enabled
+    const prev = !!this.autoCheckData.checkEnable
+    this.autoCheckData.checkEnable = next
+
+    if (next) {
+      this.startAutoCheckTimer()
+      if (!prev && !this.isChecking) {
+        this.autoCheckData.userCheck = false
+        this.updater.checkForUpdates()
+      }
+    } else {
+      this.stopAutoCheckTimer()
+    }
+  }
+
+  startAutoCheckTimer () {
+    this.stopAutoCheckTimer()
+    if (!this.autoCheckData.checkEnable) {
+      return
+    }
+    const intervalMs = 60 * 60 * 1000
+    this._autoCheckTimer = setInterval(() => {
+      if (!this.autoCheckData.checkEnable) {
+        return
+      }
+      if (this.isChecking) {
+        return
+      }
+      const cfg = global.application?.configManager
+      const updateAvailable = cfg ? !!cfg.getUserConfig('update-available') : false
+      if (updateAvailable) {
+        return
+      }
+      this.autoCheckData.userCheck = false
+      this.updater.checkForUpdates()
+    }, intervalMs)
+    if (this._autoCheckTimer && typeof this._autoCheckTimer.unref === 'function') {
+      this._autoCheckTimer.unref()
+    }
+  }
+
+  stopAutoCheckTimer () {
+    if (this._autoCheckTimer) {
+      clearInterval(this._autoCheckTimer)
+      this._autoCheckTimer = null
+    }
   }
 
   setupProxy (proxy) {
@@ -102,6 +152,9 @@ export default class UpdateManager extends EventEmitter {
     if (this.autoCheckData.checkEnable && !this.isChecking) {
       this.autoCheckData.userCheck = false
       this.updater.checkForUpdates()
+    }
+    if (this.autoCheckData.checkEnable) {
+      this.startAutoCheckTimer()
     }
   }
 
@@ -190,6 +243,8 @@ export default class UpdateManager extends EventEmitter {
       global.application.configManager.setUserConfig('new-version', finalVersion)
       global.application.configManager.setUserConfig('last-check-update-time', Date.now())
     }
+    this.isChecking = false
+    this.autoCheckData.userCheck = false
   }
 
   updateNotAvailable (event, info) {

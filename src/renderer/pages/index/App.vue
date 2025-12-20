@@ -89,6 +89,26 @@
           this.$store.dispatch('preference/updateNewVersion', version)
           this.$store.dispatch('preference/updateLastCheckUpdateTime', Date.now())
           this.$store.dispatch('preference/updateReleaseNotes', releaseNotes || '')
+
+          const v = (version == null) ? '' : `${version}`.trim()
+          if (v && typeof window !== 'undefined' && window.localStorage) {
+            const key = 'lastNotifiedUpdateVersion'
+            const last = `${window.localStorage.getItem(key) || ''}`.trim()
+            if (last !== v && !this._updateMessageShown) {
+              this._updateMessageShown = true
+              if (this.$msg && typeof this.$msg.info === 'function') {
+                this.$msg.info({
+                  message: `${this.$t('app.update-available-message')} ${v}`,
+                  duration: 10000,
+                  showClose: true,
+                  onClick: () => {
+                    this.$router.push({ path: '/preference/advanced' }).catch(err => console.log(err))
+                  }
+                })
+              }
+              window.localStorage.setItem(key, v)
+            }
+          }
         }
       }
       const onUpdateNotAvailable = () => {

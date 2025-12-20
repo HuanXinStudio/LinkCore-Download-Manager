@@ -721,6 +721,17 @@ export default class Application extends EventEmitter {
     })
   }
 
+  watchAutoCheckUpdateChange () {
+    const { userConfig } = this.configManager
+    const key = 'auto-check-update'
+    this.configListeners[key] = userConfig.onDidChange(key, async (newValue, oldValue) => {
+      logger.info(`[Motrix] detected ${key} value change event:`, newValue, oldValue)
+      if (this.updateManager && typeof this.updateManager.setAutoCheckEnabled === 'function') {
+        this.updateManager.setAutoCheckEnabled(!!newValue)
+      }
+    })
+  }
+
   watchShowProgressBarChange () {
     const { userConfig } = this.configManager
     const key = 'show-progress-bar'
@@ -1209,6 +1220,12 @@ export default class Application extends EventEmitter {
 
     this.updateManager.on('update-available', () => {
       this._updateStatusInitialized = true
+      this.menuManager.updateMenuItemEnabledState('app.check-for-updates', true)
+      this.trayManager.updateMenuItemEnabledState('app.check-for-updates', true)
+      const win = this.windowManager.getWindow('index')
+      if (win) {
+        win.setProgressBar(-1)
+      }
     })
 
     this.updateManager.on('download-progress', (event) => {
@@ -1722,6 +1739,7 @@ export default class Application extends EventEmitter {
     this.watchProxyChange()
     this.watchLocaleChange()
     this.watchThemeChange()
+    this.watchAutoCheckUpdateChange()
 
     this.on('download-status-change', (downloading) => {
       this.trayManager.handleDownloadStatusChange(downloading)
@@ -1878,7 +1896,7 @@ export default class Application extends EventEmitter {
         // 使用与UpdateManager.js相同的方式发送事件，只传递版本号参数
         const windows = this.windowManager.getWindowList()
         windows.forEach(window => {
-          window.webContents.send('update-available', newVersion)
+          window.webContents.send('update-available', newVersion, '')
         })
       } else {
         // 如果没有新版本可用，发送update-not-available事件
