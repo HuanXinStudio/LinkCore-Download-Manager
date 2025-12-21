@@ -706,6 +706,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  outline: none;
+  border: none;
+  box-shadow: none;
+  &:focus,
+  &:active {
+    outline: none;
+    border: none;
+    box-shadow: none;
+  }
 }
 
 .subnav-small-screen .menu > li:hover {
@@ -721,6 +730,9 @@
 .subnav-small-screen .menu svg {
   padding: 6px;
   color: $--icon-color;
+  outline: none;
+  border: none;
+  box-shadow: none;
 }
 
 .subnav-small-screen .small-menu {

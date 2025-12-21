@@ -476,6 +476,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      outline: none;
+      border: none;
+      box-shadow: none;
+      &:focus,
+      &:active {
+        outline: none;
+        border: none;
+        box-shadow: none;
+      }
       &:hover {
         background-color: rgba(0, 0, 0, 0.15);
         border-radius: 8px;
@@ -488,6 +497,9 @@
     svg {
       padding: 6px;
       color: $--icon-color;
+      outline: none;
+      border: none;
+      box-shadow: none;
     }
   }
 
