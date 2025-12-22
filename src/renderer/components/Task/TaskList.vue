@@ -4,7 +4,7 @@
     v-if="displayTaskList.length > 0"
     attribute="attr"
     @change="handleDragSelectChange"
-    @click.native="handleListBlankClick"
+    @mousedown.native="handleListBlankClick"
   >
     <div
       v-for="item in displayTaskList"
@@ -304,6 +304,9 @@
       },
       handleListBlankClick (e) {
         if (!e || e.target !== e.currentTarget) {
+          return
+        }
+        if (typeof e.button === 'number' && e.button === 0) {
           return
         }
         if (!this.selectedList || this.selectedList.length === 0) {

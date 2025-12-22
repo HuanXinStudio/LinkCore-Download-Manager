@@ -75,6 +75,9 @@
       }
 
       function startDrag (e) {
+        if (e && typeof e.preventDefault === 'function') {
+          e.preventDefault()
+        }
         containerRect = container.getBoundingClientRect()
         const children = container.querySelectorAll('[' + self.attribute + ']')
         childrenRects = Array.from(children).map(child => ({
@@ -139,14 +142,21 @@
         }
       }
 
-      container.addEventListener('mousedown', startDrag)
+      const onMouseDown = (e) => {
+        if (!container.contains(e.target)) {
+          return
+        }
+        startDrag(e)
+      }
+
+      document.addEventListener('mousedown', onMouseDown, true)
       container.addEventListener('touchstart', touchStart)
 
       document.addEventListener('mouseup', endDrag)
       document.addEventListener('touchend', endDrag)
 
       this.$once('on:destroy', () => {
-        container.removeEventListener('mousedown', startDrag)
+        document.removeEventListener('mousedown', onMouseDown, true)
         container.removeEventListener('touchstart', touchStart)
         document.removeEventListener('mouseup', endDrag)
         document.removeEventListener('touchend', endDrag)
@@ -159,7 +169,10 @@
         box.style.position = 'absolute'
         box.style.backgroundColor = this.color
         box.style.opacity = this.opacity
-        box.style.zIndex = 1000
+        box.style.zIndex = 9999
+        box.style.boxSizing = 'border-box'
+        box.style.border = '1px solid rgba(64, 158, 255, 0.9)'
+        box.style.borderRadius = '2px'
         box.style.pointerEvents = 'none'
 
         return box
