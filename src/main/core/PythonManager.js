@@ -22,8 +22,22 @@ export default class PythonManager {
       basePath = resolve(app.getAppPath(), '..', 'Python')
     }
 
-    const binName = process.platform === 'win32' ? 'bin/python.exe' : 'bin/python3'
-    return join(basePath, binName)
+    const candidates = []
+    if (process.platform === 'win32') {
+      candidates.push(
+        join(basePath, 'python.exe'),
+        join(basePath, 'python3.exe'),
+        join(basePath, 'bin', 'python.exe')
+      )
+    } else {
+      candidates.push(
+        join(basePath, 'bin', 'python3'),
+        join(basePath, 'bin', 'python')
+      )
+    }
+
+    const found = candidates.find(p => existsSync(p))
+    return found || candidates[0]
   }
 
   getScriptPath () {

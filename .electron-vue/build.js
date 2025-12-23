@@ -7,6 +7,9 @@ const chalk = require('chalk')
 const del = require('del')
 const Webpack = require('webpack')
 const Multispinner = require('@motrix/multispinner')
+const { spawn } = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
 
 const mainConfig = require('./webpack.main.config')
 const rendererConfig = require('./webpack.renderer.config')
@@ -22,13 +25,95 @@ if (process.env.BUILD_TARGET === 'clean') {
 } else if (process.env.BUILD_TARGET === 'web') {
   web()
 } else {
-  build()
+  buildWithParser()
 }
 
 function clean () {
   del.sync(['release/*', '!.gitkeep'])
   console.log(`\n${doneLog}\n`)
   process.exit()
+}
+
+function buildWithParser () {
+  buildBilibiliParser().then(() => {
+    build()
+  }).catch(() => {
+    build()
+  })
+}
+
+function buildBilibiliParser () {
+  return new Promise((resolve) => {
+    const projectRoot = path.join(__dirname, '..')
+    const outputName = process.platform === 'win32' ? 'bilibili_parser.exe' : 'bilibili_parser'
+    const staticDir = path.join(projectRoot, 'static', 'parsers')
+    const sourcePy = path.join(projectRoot, 'Python', 'parsers', 'bilibili_parser.py')
+    const staticPy = path.join(staticDir, 'bilibili_parser.py')
+    try {
+      if (fs.existsSync(sourcePy)) {
+        if (!fs.existsSync(staticDir)) {
+          fs.mkdirSync(staticDir, { recursive: true })
+        }
+        fs.copyFileSync(sourcePy, staticPy)
+      }
+    } catch (_) {}
+    const staticOutput = path.join(staticDir, outputName)
+    if (fs.existsSync(staticOutput)) {
+      resolve()
+      return
+    }
+    const distOutput = path.join(projectRoot, 'dist', outputName)
+    if (fs.existsSync(distOutput)) {
+      if (!fs.existsSync(staticDir)) {
+        fs.mkdirSync(staticDir, { recursive: true })
+      }
+      fs.copyFileSync(distOutput, staticOutput)
+      resolve()
+      return
+    }
+    const pythonCandidates = process.platform === 'win32'
+      ? ['py', 'python', 'python3']
+      : ['python3', 'python']
+    let index = 0
+    const next = () => {
+      const cmd = pythonCandidates[index++]
+      if (!cmd) {
+        resolve()
+        return
+      }
+      const args = [
+        '-m',
+        'PyInstaller',
+        'Python/parsers/bilibili_parser.py',
+        '--onefile',
+        '--name',
+        'bilibili_parser'
+      ]
+      const child = spawn(cmd, args, {
+        cwd: projectRoot,
+        stdio: 'inherit',
+        shell: true
+      })
+      child.on('error', () => {
+        next()
+      })
+      child.on('close', (code) => {
+        if (code === 0 && fs.existsSync(distOutput)) {
+          if (!fs.existsSync(staticDir)) {
+            fs.mkdirSync(staticDir, { recursive: true })
+          }
+          fs.copyFileSync(distOutput, staticOutput)
+          resolve()
+        } else if (code === 0 && !fs.existsSync(distOutput)) {
+          console.log('bilibili parser build finished but output not found, skipping')
+          resolve()
+        } else {
+          next()
+        }
+      })
+    }
+    next()
+  })
 }
 
 function build () {

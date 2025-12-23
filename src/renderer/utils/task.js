@@ -41,8 +41,11 @@ const getStaticBasePath = () => {
 const getBilibiliParserPath = () => {
   const base = getStaticBasePath()
   const resourcesPath = process && process.resourcesPath ? `${process.resourcesPath}` : ''
-  const packedCandidate1 = resourcesPath ? join(resourcesPath, 'python', 'parsers', 'bilibili_parser.py') : ''
+  const packedCandidate1 = resourcesPath ? join(resourcesPath, 'parsers', 'bilibili_parser.exe') : ''
   if (packedCandidate1 && existsSync(packedCandidate1)) return packedCandidate1
+
+  const packedCandidate1b = resourcesPath ? join(resourcesPath, 'parsers', 'bilibili_parser') : ''
+  if (packedCandidate1b && existsSync(packedCandidate1b)) return packedCandidate1b
 
   const packedCandidate2 = resourcesPath ? join(resourcesPath, 'parsers', 'bilibili_parser.py') : ''
   if (packedCandidate2 && existsSync(packedCandidate2)) return packedCandidate2
@@ -50,16 +53,22 @@ const getBilibiliParserPath = () => {
   const devCandidate0 = base ? join(base, '..', '..', '..', 'Python', 'parsers', 'bilibili_parser.py') : ''
   if (devCandidate0 && existsSync(devCandidate0)) return devCandidate0
 
-  const devCandidate0b = base ? join(base, '..', '..', '..', 'static', 'parsers', 'bilibili_parser.py') : ''
+  const devCandidate0b = base ? join(base, '..', '..', '..', 'static', 'parsers', 'bilibili_parser.exe') : ''
   if (devCandidate0b && existsSync(devCandidate0b)) return devCandidate0b
+
+  const devCandidate0c = base ? join(base, '..', '..', '..', 'static', 'parsers', 'bilibili_parser') : ''
+  if (devCandidate0c && existsSync(devCandidate0c)) return devCandidate0c
 
   const devCandidate1 = base ? join(base, '..', 'Python', 'parsers', 'bilibili_parser.py') : ''
   if (devCandidate1 && existsSync(devCandidate1)) return devCandidate1
 
-  const devCandidate2 = base ? join(base, 'parsers', 'bilibili_parser.py') : ''
+  const devCandidate2 = base ? join(base, 'parsers', 'bilibili_parser.exe') : ''
   if (devCandidate2 && existsSync(devCandidate2)) return devCandidate2
 
-  return packedCandidate1 || packedCandidate2 || devCandidate0 || devCandidate0b || devCandidate1 || devCandidate2 || ''
+  const devCandidate2b = base ? join(base, 'parsers', 'bilibili_parser') : ''
+  if (devCandidate2b && existsSync(devCandidate2b)) return devCandidate2b
+
+  return packedCandidate1 || packedCandidate1b || packedCandidate2 || devCandidate0 || devCandidate0b || devCandidate0c || devCandidate1 || devCandidate2 || devCandidate2b || ''
 }
 
 const isBilibiliCandidateUrl = (url) => {
@@ -127,6 +136,41 @@ const runBilibiliParser = async (url, options = {}) => {
   if (qn && qn.trim()) {
     argsExtra.push('--qn', qn.trim())
   }
+
+  const exeCandidates = []
+  const resourcesPath = process && process.resourcesPath ? `${process.resourcesPath}` : ''
+  if (resourcesPath) {
+    const exePacked = join(resourcesPath, 'parsers', 'bilibili_parser.exe')
+    if (existsSync(exePacked)) {
+      exeCandidates.push(exePacked)
+    }
+    const binPacked = join(resourcesPath, 'parsers', 'bilibili_parser')
+    if (existsSync(binPacked)) {
+      exeCandidates.push(binPacked)
+    }
+  }
+
+  const base = getStaticBasePath()
+  if (base) {
+    const exeDev1 = join(base, '..', '..', '..', 'static', 'parsers', 'bilibili_parser.exe')
+    if (existsSync(exeDev1)) {
+      exeCandidates.push(exeDev1)
+    }
+    const binDev1 = join(base, '..', '..', '..', 'static', 'parsers', 'bilibili_parser')
+    if (existsSync(binDev1)) {
+      exeCandidates.push(binDev1)
+    }
+    const exeDev2 = join(base, 'parsers', 'bilibili_parser.exe')
+    if (existsSync(exeDev2)) {
+      exeCandidates.push(exeDev2)
+    }
+    const binDev2 = join(base, 'parsers', 'bilibili_parser')
+    if (existsSync(binDev2)) {
+      exeCandidates.push(binDev2)
+    }
+  }
+
+  const exeItems = exeCandidates.map(cmd => ({ cmd, args: [url, ...argsExtra] }))
   const embedded = getEmbeddedPythonCandidates().map(cmd => ({ cmd, args: [script, url, ...argsExtra] }))
   const systemFallback = process.platform === 'win32'
     ? [
@@ -138,7 +182,7 @@ const runBilibiliParser = async (url, options = {}) => {
       { cmd: 'python3', args: [script, url, ...argsExtra] },
       { cmd: 'python', args: [script, url, ...argsExtra] }
     ]
-  const candidates = [...embedded, ...systemFallback]
+  const candidates = [...exeItems, ...embedded, ...systemFallback]
 
   const attempt = (index) => new Promise((resolve, reject) => {
     const item = candidates[index]

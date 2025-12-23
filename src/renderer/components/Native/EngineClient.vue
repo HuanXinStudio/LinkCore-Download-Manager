@@ -427,7 +427,9 @@
           const root = resolve(process.cwd(), 'ffmpeg-8.0.1-essentials_build')
           candidates.push(
             resolve(root, 'bin', 'ffmpeg.exe'),
-            resolve(root, 'ffmpeg.exe')
+            resolve(root, 'ffmpeg.exe'),
+            resolve(root, 'bin', 'ffmpeg'),
+            resolve(root, 'ffmpeg')
           )
         } catch (_) {}
         try {
@@ -436,7 +438,9 @@
             const root = resolve(rp, 'ffmpeg-8.0.1-essentials_build')
             candidates.push(
               resolve(root, 'bin', 'ffmpeg.exe'),
-              resolve(root, 'ffmpeg.exe')
+              resolve(root, 'ffmpeg.exe'),
+              resolve(root, 'bin', 'ffmpeg'),
+              resolve(root, 'ffmpeg')
             )
           }
         } catch (_) {}
