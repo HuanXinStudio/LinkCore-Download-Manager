@@ -151,6 +151,10 @@
               const opt = await api.getOption({ gid })
               const hs = opt && opt.header ? opt.header : []
               const headers = Array.isArray(hs) ? hs : (typeof hs === 'string' ? [hs] : [])
+              const referer = opt && opt.referer ? `${opt.referer}` : ''
+              if (!isBilibiliPart && this.looksLikeBilibiliSource(referer, headers)) {
+                isBilibiliPart = true
+              }
               const fromHeader = headers.some(h => /X-LinkCore-Source\s*:\s*BrowserExtension/i.test(`${h}`))
               const fromReferer = !!(opt && opt.referer && /^https?:/i.test(`${opt.referer}`))
               if (!isBilibiliPart) {
@@ -361,6 +365,41 @@
         } else if (!(mergeResult && mergeResult.isBilibiliPart)) {
           this.autoCategorizeDownloadedFile(task, finalPath)
         }
+      },
+      looksLikeBilibiliSource (referer, headers) {
+        const urls = []
+        if (referer && typeof referer === 'string') {
+          urls.push(referer)
+        }
+        if (Array.isArray(headers)) {
+          headers.forEach((h) => {
+            if (typeof h !== 'string') {
+              return
+            }
+            const idx = h.indexOf(':')
+            if (idx <= 0) {
+              return
+            }
+            const name = h.slice(0, idx).trim().toLowerCase()
+            const value = h.slice(idx + 1).trim()
+            if (!value) {
+              return
+            }
+            if (name === 'referer' || name === 'origin') {
+              urls.push(value)
+            }
+          })
+        }
+        for (const u of urls) {
+          try {
+            const url = new URL(u)
+            const host = (url.hostname || '').toLowerCase()
+            if (host.includes('bilibili.com') || host.includes('b23.tv')) {
+              return true
+            }
+          } catch (_) {}
+        }
+        return false
       },
       parseBilibiliDashPart (fullPath) {
         try {
