@@ -438,17 +438,6 @@
       resolveFfmpegPath () {
         const candidates = []
         try {
-          const rp = process && process.resourcesPath ? `${process.resourcesPath}` : ''
-          if (rp) {
-            const root = resolve(rp, 'ffmpeg')
-            const exe = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
-            candidates.push(
-              resolve(root, exe),
-              resolve(root, 'bin', exe)
-            )
-          }
-        } catch (_) {}
-        try {
           const root = resolve(process.cwd(), 'ffmpeg-8.0.1-essentials_build')
           candidates.push(
             resolve(root, 'bin', 'ffmpeg.exe'),

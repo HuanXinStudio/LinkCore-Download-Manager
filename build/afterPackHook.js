@@ -102,41 +102,33 @@ module.exports = async function (context) {
   const destParsersDir = join(resourcesDir, 'parsers')
   copyDirRecursiveSync(srcParsersDir, destParsersDir)
 
-  const srcFfmpegStaticDir = join(__dirname, '..', 'static', 'ffmpeg')
-  const srcFfmpegLegacyDir = join(__dirname, '..', 'ffmpeg-8.0.1-essentials_build')
-  const destFfmpegDir = join(resourcesDir, 'ffmpeg')
+  const srcFfmpegDir = join(__dirname, '..', 'ffmpeg-8.0.1-essentials_build')
+  const destFfmpegDir = join(resourcesDir, 'ffmpeg-8.0.1-essentials_build')
   try {
-    let srcBin = ''
-    if (fs.existsSync(srcFfmpegStaticDir)) {
-      const exeName = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
-      const cand1 = join(srcFfmpegStaticDir, exeName)
-      const cand2 = join(srcFfmpegStaticDir, 'bin', exeName)
-      if (fs.existsSync(cand1)) {
-        srcBin = cand1
-      } else if (fs.existsSync(cand2)) {
-        srcBin = cand2
+    if (fs.existsSync(srcFfmpegDir)) {
+      let srcBin = join(srcFfmpegDir, 'bin', 'ffmpeg.exe')
+      if (!fs.existsSync(srcBin)) {
+        srcBin = join(srcFfmpegDir, 'ffmpeg.exe')
       }
-    } else if (fs.existsSync(srcFfmpegLegacyDir)) {
-      let cand = join(srcFfmpegLegacyDir, 'bin', 'ffmpeg.exe')
-      if (!fs.existsSync(cand)) {
-        cand = join(srcFfmpegLegacyDir, 'ffmpeg.exe')
+      if (!fs.existsSync(srcBin)) {
+        srcBin = join(srcFfmpegDir, 'bin', 'ffmpeg')
       }
-      if (!fs.existsSync(cand)) {
-        cand = join(srcFfmpegLegacyDir, 'bin', 'ffmpeg')
+      if (!fs.existsSync(srcBin)) {
+        srcBin = join(srcFfmpegDir, 'ffmpeg')
       }
-      if (!fs.existsSync(cand)) {
-        cand = join(srcFfmpegLegacyDir, 'ffmpeg')
+      if (fs.existsSync(srcBin)) {
+        const destBinDir = join(destFfmpegDir, 'bin')
+        if (!fs.existsSync(destBinDir)) {
+          fs.mkdirSync(destBinDir, { recursive: true })
+        }
+        const destBinPath = join(destBinDir, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg')
+        fs.copyFileSync(srcBin, destBinPath)
+        if (!fs.existsSync(destFfmpegDir)) {
+          fs.mkdirSync(destFfmpegDir, { recursive: true })
+        }
+        const destRootPath = join(destFfmpegDir, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg')
+        fs.copyFileSync(srcBin, destRootPath)
       }
-      if (fs.existsSync(cand)) {
-        srcBin = cand
-      }
-    }
-    if (srcBin) {
-      if (!fs.existsSync(destFfmpegDir)) {
-        fs.mkdirSync(destFfmpegDir, { recursive: true })
-      }
-      const destBinPath = join(destFfmpegDir, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg')
-      fs.copyFileSync(srcBin, destBinPath)
     }
   } catch (e) {}
 
