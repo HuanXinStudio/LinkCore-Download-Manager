@@ -74,9 +74,8 @@ const getBilibiliParserPath = () => {
 const isBilibiliCandidateUrl = (url) => {
   const s = `${url || ''}`.trim()
   if (!s) return false
-  if (/^https?:\/\/(www\.)?bilibili\.com\/video\//i.test(s)) return true
-  if (/^https?:\/\/b23\.tv\//i.test(s)) return true
-  if (/^https?:\/\/(m\.)?bilibili\.com\/video\//i.test(s)) return true
+  if (/^https?:\/\/(?:[a-z0-9-]+\.)*bilibili\.com\/(video|bangumi|cheese)\//i.test(s)) return true
+  if (/^https?:\/\/(?:www\.)?b23\.tv\//i.test(s)) return true
   return false
 }
 
