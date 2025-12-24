@@ -1,7 +1,15 @@
 <template>
   <div :key="task.gid" class="task-item" v-on:dblclick="onDbClick">
-    <div class="task-name" :title="taskFullName">
-      <span>{{ taskFullName }}</span>
+    <div class="task-name">
+      <el-tooltip
+        effect="dark"
+        :content="taskFullName"
+        placement="top"
+        :open-delay="500"
+        :disabled="!taskNameTruncated"
+      >
+        <span ref="taskNameText" class="task-name__text">{{ taskFullName }}</span>
+      </el-tooltip>
     </div>
     <mo-task-item-actions mode="LIST" :task="task" />
     <div class="task-progress">
@@ -39,6 +47,11 @@
         type: Object
       }
     },
+    data () {
+      return {
+        taskNameTruncated: false
+      }
+    },
     watch: {
       'task.status': {
         immediate: true,
@@ -46,6 +59,9 @@
           if (val === TASK_STATUS.COMPLETE) {
             this.ensureFixedDisplayName()
           }
+        },
+        taskFullName () {
+          this.updateTaskNameTruncation()
         }
       }
     },
@@ -100,6 +116,13 @@
       }
 
     },
+    mounted () {
+      this.updateTaskNameTruncation()
+      window.addEventListener('resize', this.updateTaskNameTruncation)
+    },
+    destroyed () {
+      window.removeEventListener('resize', this.updateTaskNameTruncation)
+    },
     methods: {
       getCompletedDisplayName (task) {
         const config = this.preferenceConfig || {}
@@ -125,6 +148,16 @@
         if (name) {
           this.$store.dispatch('task/setTaskDisplayName', { gid, name })
         }
+      },
+      updateTaskNameTruncation () {
+        this.$nextTick(() => {
+          const el = this.$refs.taskNameText
+          if (!el || !el.scrollWidth || !el.clientWidth) {
+            this.taskNameTruncated = false
+            return
+          }
+          this.taskNameTruncated = el.scrollWidth > el.clientWidth
+        })
       },
       onDbClick () {
         const { status } = this.task
@@ -178,21 +211,21 @@
 .selected .task-item {
   border-color: $--task-item-hover-border-color;
 }
-  .task-name {
+.task-name {
   color: #505753;
   margin-bottom: 1.5rem;
   margin-right: 170px;
-  word-break: break-all;
   min-height: 26px;
-  &> span {
+  .task-name__text {
     font-size: 14px;
     line-height: 26px;
-    overflow : hidden;
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
-    display: -webkit-box;
-    line-clamp: 2;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    position: relative;
+    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0));
+    mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0));
   }
 }
 </style>

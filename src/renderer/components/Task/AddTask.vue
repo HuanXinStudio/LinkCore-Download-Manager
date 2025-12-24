@@ -445,22 +445,7 @@
         if (!this.visible) {
           return
         }
-        if (!this.isUriLikeType(this.taskType)) {
-          return
-        }
-        const cur = (current || '').trim()
-        const prev = (previous || '').trim()
-        if (!cur || cur === prev) {
-          return
-        }
-        const existing = (this.form.uris || '').trim()
-        const lines = existing ? existing.split(/\r?\n/).filter(Boolean) : []
-        if (lines.includes(cur)) {
-          return
-        }
-        const next = existing ? `${existing}\n${cur}` : cur
-        this.keepTrailingNewline = true
-        this.form.uris = next
+        this.applyUrlFromStore(current, previous)
       },
       'form.uris' (val) {
         if (this.isUriLikeType(this.taskType)) {
@@ -474,6 +459,31 @@
     methods: {
       isUriLikeType (type) {
         return type === ADD_TASK_TYPE.URI || type === 'video'
+      },
+      applyUrlFromStore (current, previous) {
+        if (!this.isUriLikeType(this.taskType)) {
+          return
+        }
+        const cur = (current || '').trim()
+        const prev = (previous || '').trim()
+        if (!cur || cur === prev) {
+          return
+        }
+        const existing = (this.form.uris || '').trim()
+        const lines = existing ? existing.split(/\r?\n/).filter(Boolean) : []
+        if (!lines.includes(cur)) {
+          const next = existing ? `${existing}\n${cur}` : cur
+          this.keepTrailingNewline = true
+          this.form.uris = next
+        }
+        if (isBilibiliUrl(cur) && this.taskType !== 'video') {
+          this.$store.dispatch('app/changeAddTaskType', 'video')
+          setTimeout(() => {
+            if (this.taskType === 'video') {
+              this.scheduleVideoPreview(this.form.uris || cur)
+            }
+          }, 0)
+        }
       },
       loadAdvancedPresets () {
         const { advancedOptionPresets = [] } = this.config || {}
@@ -644,6 +654,28 @@
         this.onAdvancedPresetChange('')
         this.loadAdvancedPresets()
         if (this.isUriLikeType(this.taskType)) {
+          if (this.addTaskUrlFromStore) {
+            this.applyUrlFromStore(this.addTaskUrlFromStore, '')
+          }
+          const rawUris = this.form.uris || ''
+          if (rawUris && this.taskType !== 'video') {
+            const firstUrl = rawUris.split(/\r?\n/).map(s => s.trim()).filter(Boolean)[0] || ''
+            if (firstUrl && isBilibiliUrl(firstUrl)) {
+              this.$store.dispatch('app/changeAddTaskType', 'video')
+              setTimeout(() => {
+                if (this.taskType === 'video') {
+                  const cfg = this.config || {}
+                  if (!this.form.cookie && cfg.videoCookie) {
+                    this.form.cookie = `${cfg.videoCookie}`
+                  }
+                  if (this.form.videoQn === undefined) {
+                    this.$set(this.form, 'videoQn', cfg.videoPreferredQn !== undefined ? cfg.videoPreferredQn : '')
+                  }
+                  this.scheduleVideoPreview(this.form.uris || firstUrl)
+                }
+              }, 0)
+            }
+          }
           if (this.taskType === 'video') {
             const cfg = this.config || {}
             if (!this.form.cookie && cfg.videoCookie) {

@@ -477,6 +477,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     handleShiftHotkey()
     return true
   }
+
+  if (msg && msg.type === 'addUriFromContent' && msg.url) {
+    const handleAddFromContent = async () => {
+      const url = msg.url || ''
+      if (!url || !/^https?:/i.test(url)) {
+        sendResponse({ ok: false })
+        return
+      }
+      const referer = msg.referer || ''
+      const ok = await addUri(url, referer)
+      sendResponse({ ok })
+    }
+    handleAddFromContent()
+    return true
+  }
 })
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   let url = info.linkUrl || info.srcUrl || info.pageUrl
