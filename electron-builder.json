@@ -12,6 +12,7 @@
       }
     ],
     "asar": true,
+    "compression": "maximum",
     "directories": {
       "output": "release"
     },

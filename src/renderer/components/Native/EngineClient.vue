@@ -133,6 +133,20 @@
               const info = this.parseBilibiliDashPart(p)
               isBilibiliPart = !!(info && info.base)
             } catch (_) {}
+            if (!isBilibiliPart) {
+              try {
+                const files = Array.isArray(task && task.files) ? task.files : []
+                const first = files.length > 0 ? files[0] : null
+                const p = first && first.path ? `${first.path}` : ''
+                if (p) {
+                  const base = basename(p)
+                  const lower = base.toLowerCase()
+                  if (lower.endsWith('_video.mp4') || lower.endsWith('_audio.m4a') || /\.m4s$/i.test(base)) {
+                    isBilibiliPart = true
+                  }
+                }
+              } catch (_) {}
+            }
             try {
               const opt = await api.getOption({ gid })
               const hs = opt && opt.header ? opt.header : []
@@ -423,6 +437,17 @@
       },
       resolveFfmpegPath () {
         const candidates = []
+        try {
+          const rp = process && process.resourcesPath ? `${process.resourcesPath}` : ''
+          if (rp) {
+            const root = resolve(rp, 'ffmpeg')
+            const exe = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
+            candidates.push(
+              resolve(root, exe),
+              resolve(root, 'bin', exe)
+            )
+          }
+        } catch (_) {}
         try {
           const root = resolve(process.cwd(), 'ffmpeg-8.0.1-essentials_build')
           candidates.push(
