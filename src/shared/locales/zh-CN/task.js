@@ -149,6 +149,7 @@ export default {
   'peers-filter-uploading': '上传中',
   'peers-filter-idle': '空闲',
   'peers-search': '搜索主机/客户端',
+  'search-tasks': '搜索任务',
   'category-all': '全部',
   'category-archives': '压缩文件',
   'category-programs': '程序',

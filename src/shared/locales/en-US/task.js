@@ -149,6 +149,7 @@ export default {
   'peers-filter-uploading': 'Uploading',
   'peers-filter-idle': 'Idle',
   'peers-search': 'Search host/client',
+  'search-tasks': 'Search tasks',
   'category-all': 'All',
   'category-archives': 'Archives',
   'category-programs': 'Programs',

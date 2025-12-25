@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Preferenze salvate con successo',
   'save-fail-message': 'Preferenze non salvate',
   'discard': 'Scarta modifiche',
+  'no-settings-found': 'Nessuna impostazione trovata',
   'startup': 'Avvio',
   'open-at-login': 'Apri al login',
   'keep-window-state': 'Mantieni le dimensioni e la posizione della finestra quando l\'app viene chiusa',

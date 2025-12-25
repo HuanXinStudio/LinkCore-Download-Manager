@@ -5,7 +5,11 @@
     <el-tooltip effect="dark" :content="$t('app.task-plan')" placement="top" :open-delay="500">
       <button
         class="mo-task-plan"
-        :class="{ 'is-planned': isTaskPlanPlanned }"
+        :class="{
+          'is-planned': isTaskPlanPlanned,
+          'is-search-open': isFloatingBarSearchOpen,
+          'is-search-expanded': isFloatingBarSearchExpanded
+        }"
         type="button"
         @click="onTaskPlanClick"
       >
@@ -142,7 +146,9 @@
         hasModalMaskVisible: false,
         lastTaskStatuses: {},
         progressWindow: null,
-        progressTaskGid: ''
+        progressTaskGid: '',
+        isFloatingBarSearchOpen: false,
+        isFloatingBarSearchExpanded: false
       }
     },
     computed: {
@@ -236,6 +242,12 @@
       }
     },
     methods: {
+      handleFloatingBarSearchOpen (open) {
+        this.isFloatingBarSearchOpen = !!open
+      },
+      handleFloatingBarSearchExpanded (expanded) {
+        this.isFloatingBarSearchExpanded = !!expanded
+      },
       updateModalMaskVisible () {
         try {
           this.hasModalMaskVisible = !!document.body.querySelector('.v-modal')
@@ -1042,8 +1054,10 @@
       commands.on('show-task-progress', this.handleShowTaskProgress)
       commands.on('task-progress:control', this.handleTaskProgressControl)
       commands.on('task-progress:auto-open', this.handleTaskProgressAutoOpen)
+      commands.on('floating-bar:search-open', this.handleFloatingBarSearchOpen)
+      commands.on('floating-bar:search-expanded', this.handleFloatingBarSearchExpanded)
     },
-    destroyed () {
+    beforeDestroy () {
       if (this._modalObserver) {
         try {
           this._modalObserver.disconnect()
@@ -1053,6 +1067,8 @@
       commands.off('show-task-progress', this.handleShowTaskProgress)
       commands.off('task-progress:control', this.handleTaskProgressControl)
       commands.off('task-progress:auto-open', this.handleTaskProgressAutoOpen)
+      commands.off('floating-bar:search-open', this.handleFloatingBarSearchOpen)
+      commands.off('floating-bar:search-expanded', this.handleFloatingBarSearchExpanded)
     }
   }
 </script>
@@ -1077,8 +1093,9 @@
     border: 1px solid $--speedometer-border-color;
     background-color: $--floating-bar-background;
     opacity: 0.5;
-    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     user-select: none;
     outline: none;
@@ -1106,6 +1123,16 @@
     &.is-planned:hover {
       border-color: #a5d6a7;
       opacity: 1;
+    }
+
+    &.is-search-open {
+      transform: translateX(121px);
+      transition-delay: 0.1s;
+    }
+
+    &.is-search-expanded {
+      transform: translateX(277px);
+      transition-delay: 0s;
     }
   }
 

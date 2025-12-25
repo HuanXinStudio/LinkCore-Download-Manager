@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Instellingen succesvol opgeslagen',
   'save-fail-message': 'Instellingen opslaan mislukt',
   'discard': 'Weggooien',
+  'no-settings-found': 'Geen instellingen gevonden',
   'startup': 'Opstarten',
   'open-at-login': 'Bij login openen',
   'keep-window-state': 'Behoud grootte en positie van venster bij afsluiten',

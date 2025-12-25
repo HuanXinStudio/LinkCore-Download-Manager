@@ -6,6 +6,7 @@ export default {
   'save-success-message': '設定を保存します',
   'save-fail-message': '設定を保存できませんでした',
   'discard': '放棄',
+  'no-settings-found': '設定が見つかりません',
   'startup': '起動',
   'open-at-login': '自動的に起動します',
   'auto-resume-all': '起動後自動的に未完了タスクを再開',

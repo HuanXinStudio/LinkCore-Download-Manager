@@ -3,6 +3,8 @@ export default {
   'advanced': '进阶设置',
   'video': '视频设置',
   'lab': '实验室',
+  'search-settings': '搜索设置',
+  'no-settings-found': '未找到任何设置',
   'save': '保存并应用',
   'save-success-message': '偏好设置保存成功',
   'save-fail-message': '偏好设置保存失败',

@@ -37,7 +37,8 @@
   } from '@shared/constants'
   import {
     getFileExtension,
-    getFileNameFromFile
+    getFileNameFromFile,
+    getTaskName
   } from '@shared/utils'
   import DragSelect from '@/components/DragSelect/Index'
   import TaskItem from './TaskItem'
@@ -50,6 +51,10 @@
     },
     props: {
       category: {
+        type: String,
+        default: ''
+      },
+      keyword: {
         type: String,
         default: ''
       }
@@ -71,11 +76,24 @@
         preferenceConfig: state => state.config
       }),
       displayTaskList () {
-        if (!this.category) {
-          return this.taskList
+        const baseList = !this.category
+          ? this.taskList
+          : this.taskList.filter((task) => {
+            return this.taskMatchesCategory(task, this.category)
+          })
+        const q = `${this.keyword || ''}`.trim().toLowerCase()
+        if (!q) {
+          return baseList
         }
-        return this.taskList.filter((task) => {
-          return this.taskMatchesCategory(task, this.category)
+        return baseList.filter((task) => {
+          const name = getTaskName(task, {
+            defaultName: '',
+            maxLen: -1
+          }) || ''
+          const uri = `${task && task.uri ? task.uri : ''}`.toLowerCase()
+          const gid = `${task && task.gid ? task.gid : ''}`.toLowerCase()
+          const loweredName = `${name}`.toLowerCase()
+          return loweredName.includes(q) || uri.includes(q) || gid.includes(q)
         })
       },
       multiSelectModifier () {

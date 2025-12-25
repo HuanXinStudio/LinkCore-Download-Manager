@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Mentés sikeres volt',
   'save-fail-message': 'Mentés sikertelen volt',
   'discard': 'Elvetés',
+  'no-settings-found': 'Nem találhatók beállítások',
   'startup': 'Inditás',
   'open-at-login': 'Megnyitás bejelenkezéskor',
   'keep-window-state': 'Ablak méretének megtartása kilépéskor',

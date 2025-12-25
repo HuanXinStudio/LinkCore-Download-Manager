@@ -18,16 +18,21 @@ const state = {
   lastCheckUpdateTime: 0,
   isDownloadingUpdate: false,
   downloadProgress: 0,
-  releaseNotes: ''
+  releaseNotes: '',
+  searchKeyword: ''
 }
 
 const getters = {
   theme: state => state.config.theme,
   locale: state => state.config.locale,
-  direction: state => getLangDirection(state.config.locale)
+  direction: state => getLangDirection(state.config.locale),
+  searchKeyword: state => state.searchKeyword
 }
 
 const mutations = {
+  UPDATE_SEARCH_KEYWORD (state, keyword) {
+    state.searchKeyword = keyword
+  },
   UPDATE_PREFERENCE_DATA (state, config) {
     // 创建新的配置对象
     const newConfig = { ...state.config }
@@ -68,6 +73,9 @@ const mutations = {
 }
 
 const actions = {
+  updateSearchKeyword ({ commit }, keyword) {
+    commit('UPDATE_SEARCH_KEYWORD', keyword)
+  },
   fetchPreference ({ dispatch }) {
     return new Promise((resolve) => {
       api.fetchPreference()

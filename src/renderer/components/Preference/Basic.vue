@@ -499,6 +499,11 @@
         </div>
       </el-form>
 
+      <div v-if="hasNoResults" class="no-results">
+        <i class="el-icon-warning-outline"></i>
+        <p>{{ $t('preferences.no-settings-found') }}</p>
+      </div>
+
       <!-- 文件分类规则编辑弹窗 -->
       <el-dialog
         :title="$t('preferences.file-categories')"
@@ -770,12 +775,13 @@
         locales: availableLanguages,
         rules: {},
         saveTimeout: null,
-        originalLocale: locale, // 记录用户初始选择的语言
-        localeChanged: false, // 语言是否已更改
-        originalLanguageText: this.$t('preferences.undo-change'), // 记录初始语言的"撤回更改"文本
-        showCategoryDialog: false, // 是否显示分类规则编辑弹窗
-        tempFileCategories: null, // 弹窗临时数据
-        originalFileCategories: null // 原始分类数据，用于检测修改
+        originalLocale: locale,
+        localeChanged: false,
+        originalLanguageText: this.$t('preferences.undo-change'),
+        showCategoryDialog: false,
+        tempFileCategories: null,
+        originalFileCategories: null,
+        hasNoResults: false
       }
     },
     computed: {
@@ -898,7 +904,8 @@
         return `http://127.0.0.1:${APP_HTTP_PORT}`
       },
       ...mapState('preference', {
-        config: state => state.config
+        config: state => state.config,
+        searchKeyword: state => state.searchKeyword
       }),
       // 本地化文件分类名称
       localizedFileCategories () {
@@ -920,6 +927,12 @@
       }
     },
     watch: {
+      searchKeyword: {
+        handler (val) {
+          this.filterCards(val)
+        },
+        immediate: true
+      },
       form: {
         handler () {
           // Only save if form has changed from original
@@ -947,6 +960,29 @@
       }
     },
     methods: {
+      filterCards (keyword) {
+        this.$nextTick(() => {
+          if (!this.$el) return
+          const cards = this.$el.querySelectorAll('.preference-card')
+          const k = (keyword || '').toLowerCase()
+          let visibleCount = 0
+          cards.forEach(card => {
+            if (!k) {
+              card.style.display = ''
+              visibleCount++
+              return
+            }
+            const text = card.textContent.toLowerCase()
+            if (text.includes(k)) {
+              card.style.display = ''
+              visibleCount++
+            } else {
+              card.style.display = 'none'
+            }
+          })
+          this.hasNoResults = visibleCount === 0 && k !== ''
+        })
+      },
       getShortcutCommands () {
         const baseCommands = Object.values(keymap)
         const customCommands = Object.values(this.form.customKeymap || {})
@@ -1595,6 +1631,31 @@
  .panel-content {
    padding: 0;
  }
+
+ .no-results {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  z-index: 10;
+
+  i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: var(--color-text-placeholder);
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
 
  /* 文件分类样式 */
  .category-list {

@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'บันทึกการตั้งค่าเรียบร้อยแล้ว',
   'save-fail-message': 'บันทึกการตั้งค่าไม่สำเร็จ',
   'discard': 'ทิ้ง',
+  'no-settings-found': 'ไม่พบการตั้งค่า',
   'startup': 'เริ่มขึ้น',
   'open-at-login': 'เปิดเมื่อเข้าสู่ระบบ',
   'keep-window-state': 'รักษาขนาดและตำแหน่งของหน้าต่างเมื่อออก',

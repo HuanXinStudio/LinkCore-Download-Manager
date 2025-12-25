@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Berhasil menyimpan pengaturan',
   'save-fail-message': 'Gagal menyimpan pengaturan',
   'discard': 'Batal',
+  'no-settings-found': 'Pengaturan tidak ditemukan',
   'startup': 'Memulai',
   'open-at-login': 'Buka saat login',
   'keep-window-state': 'Pertahankan ukuran dan posisi jendela aplikasi saat keluar',

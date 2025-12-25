@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Einstellungen erfolgreich speichern',
   'save-fail-message': 'Speichern der Einstellungen fehlgeschlagen',
   'discard': 'Verwerfen',
+  'no-settings-found': 'Keine Einstellungen gefunden',
   'startup': 'Startup',
   'open-at-login': 'Beim Login öffnen',
   'keep-window-state': 'Stellen Sie die Größe und Position des Fensters wieder her',

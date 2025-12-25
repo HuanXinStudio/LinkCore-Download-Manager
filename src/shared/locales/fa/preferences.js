@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'ترجیحات با موفقیت ذخیره شد',
   'save-fail-message': 'ذخیرهٔ ترجیحات شکست خورد',
   'discard': 'دور انداختن',
+  'no-settings-found': 'تنظیماتی یافت نشد',
   'startup': 'شروع برنامه',
   'open-at-login': 'گشودن هنگام ورود به سیستم',
   'keep-window-state': 'نگه‌داشتن اندازه و موقعیت پنجره هنگام خروج',

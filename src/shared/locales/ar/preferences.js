@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'تم حفظ التفضيلات بنجاح',
   'save-fail-message': 'فشل في حفظ التفضيلات',
   'discard': 'تجاهل',
+  'no-settings-found': 'لم يتم العثور على إعدادات',
   'startup': 'التشغيل',
   'open-at-login': 'الفتح عند تسجيل الدخول',
   'keep-window-state': 'المحافظة على حجم وموضع النافذة عند الخروج',

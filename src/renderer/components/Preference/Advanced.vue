@@ -555,6 +555,12 @@
           </el-form-item>
         </div>
       </el-form>
+
+      <div v-if="hasNoResults" class="no-results">
+        <i class="el-icon-warning-outline"></i>
+        <p>{{ $t('preferences.no-settings-found') }}</p>
+      </div>
+
     <el-dialog
       custom-class="tab-title-dialog aria2conf-editor-dialog"
       width="900px"
@@ -819,12 +825,13 @@
         aria2ConfRawText: '',
         appVersion: '',
         updatePreviewVisible: false,
-        updatePreviewContent: ''
+        updatePreviewContent: '',
+        hasNoResults: false
       }
     },
     computed: {
       ...mapState('app', ['isCheckingUpdate']),
-      ...mapState('preference', ['updateAvailable', 'newVersion', 'isDownloadingUpdate', 'downloadProgress', 'releaseNotes']),
+      ...mapState('preference', ['updateAvailable', 'newVersion', 'isDownloadingUpdate', 'downloadProgress', 'releaseNotes', 'searchKeyword']),
       ...mapState('app', {
         storeEngineInfo: state => state.engineInfo
       }),
@@ -932,6 +939,12 @@
       }
     },
     watch: {
+      searchKeyword: {
+        immediate: true,
+        handler (val) {
+          this.filterCards(val)
+        }
+      },
       form: {
         handler () {
           // Only save if form has changed from original
@@ -997,6 +1010,29 @@
       }
     },
     methods: {
+      filterCards (keyword) {
+        this.$nextTick(() => {
+          if (!this.$el) return
+          const cards = this.$el.querySelectorAll('.preference-card')
+          const k = (keyword || '').toLowerCase()
+          let visibleCount = 0
+          cards.forEach(card => {
+            if (!k) {
+              card.style.display = ''
+              visibleCount++
+              return
+            }
+            const text = card.textContent.toLowerCase()
+            if (text.includes(k)) {
+              card.style.display = ''
+              visibleCount++
+            } else {
+              card.style.display = 'none'
+            }
+          })
+          this.hasNoResults = visibleCount === 0 && k !== ''
+        })
+      },
       getBuiltinOrigins () {
         return (TRACKER_SOURCE_OPTIONS || [])
           .map(g => g && g.label ? g.label : '')
@@ -2294,6 +2330,31 @@
 .magnet-check-status {
   &.ok { color: #67C23A; }
   &.warn { color: #E6A23C; }
+}
+
+.no-results {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  z-index: 10;
+
+  i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: var(--color-text-placeholder);
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
 }
 
 .action-link {

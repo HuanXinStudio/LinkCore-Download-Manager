@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Tercihleri başarıyla kaydedin',
   'save-fail-message': 'Tercihleri kaydetme başarısız oldu',
   'discard': 'İptal Et',
+  'no-settings-found': 'Ayar bulunamadı',
   'startup': 'Başlangıçta',
   'open-at-login': 'Giriş sırasında aç',
   'keep-window-state': 'Pencerenin boyutunu ve konumunu geri yükleyin',

@@ -43,6 +43,11 @@
         </el-form-item>
       </div>
     </el-form>
+
+    <div v-if="hasNoResults" class="no-results">
+      <i class="el-icon-warning-outline"></i>
+      <p>{{ $t('preferences.no-settings-found') }}</p>
+    </div>
   </el-main>
 </template>
 
@@ -68,6 +73,7 @@
         formOriginal: {},
         rules: {},
         saveTimeout: null,
+        hasNoResults: false,
         qualityOptions: [
           { value: '', label: this.$t('preferences.video-preferred-quality-auto') },
           { value: 16, label: '360P (16)' },
@@ -90,10 +96,17 @@
     },
     computed: {
       ...mapState('preference', {
-        config: state => state.config
+        config: state => state.config,
+        searchKeyword: state => state.searchKeyword
       })
     },
     watch: {
+      searchKeyword: {
+        handler (val) {
+          this.filterCards(val)
+        },
+        immediate: true
+      },
       config: {
         immediate: true,
         handler (val) {
@@ -113,6 +126,29 @@
       }
     },
     methods: {
+      filterCards (keyword) {
+        this.$nextTick(() => {
+          if (!this.$el) return
+          const cards = this.$el.querySelectorAll('.preference-card')
+          const k = (keyword || '').toLowerCase()
+          let visibleCount = 0
+          cards.forEach(card => {
+            if (!k) {
+              card.style.display = ''
+              visibleCount++
+              return
+            }
+            const text = card.textContent.toLowerCase()
+            if (text.includes(k)) {
+              card.style.display = ''
+              visibleCount++
+            } else {
+              card.style.display = 'none'
+            }
+          })
+          this.hasNoResults = visibleCount === 0 && k !== ''
+        })
+      },
       autoSaveForm () {
         if (this.saveTimeout) {
           clearTimeout(this.saveTimeout)
@@ -141,3 +177,30 @@
     }
   }
 </script>
+
+<style lang="scss" scoped>
+.no-results {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  z-index: 10;
+
+  i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: var(--color-text-placeholder);
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+</style>

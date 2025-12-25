@@ -506,6 +506,25 @@ export default class Application extends EventEmitter {
     logger.info('[Motrix] stopEngine===>')
     try {
       const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+      logger.info('[Motrix] Pausing all active tasks before shutdown')
+      const activeTasks = await this.engineClient.call('tellActive')
+
+      if (activeTasks && activeTasks.length > 0) {
+        logger.info(`[Motrix] Found ${activeTasks.length} active tasks, pausing them...`)
+
+        const pausePromises = activeTasks.map(task =>
+          this.engineClient.call('pause', task.gid)
+        )
+
+        await Promise.allSettled(pausePromises)
+        logger.info('[Motrix] All active tasks paused')
+
+        await wait(500)
+      } else {
+        logger.info('[Motrix] No active tasks found')
+      }
+
       await Promise.race([
         this.engineClient.call('saveSession'),
         wait(1200)

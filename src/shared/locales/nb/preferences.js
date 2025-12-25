@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Lagre innstillinger vellykket',
   'save-fail-message': 'Lagring av innstillinger mislyktes',
   'discard': 'Forkast',
+  'no-settings-found': 'Ingen innstillinger funnet',
   'startup': 'Oppstart',
   'open-at-login': 'Åpne ved pålogging',
   'keep-window-state': 'Behold vinduets størrelse og posisjon når du går ut',

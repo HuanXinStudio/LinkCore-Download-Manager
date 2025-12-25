@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Preferències guardades amb èxit',
   'save-fail-message': 'Hi va haver un error al guardar les teves preferències',
   'discard': 'Descartar',
+  'no-settings-found': 'No s\'han trobat paràmetres',
   'startup': 'Inici',
   'open-at-login': 'Obrir en iniciar sessió',
   'keep-window-state': 'Mantenir la mida i la posició de la finestra al sortir',

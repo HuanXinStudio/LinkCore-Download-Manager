@@ -565,6 +565,18 @@
         color: $--dk-floating-bar-item-color;
       }
     }
+
+    .floating-bar-search {
+      background-color: $--dk-task-item-action-verify-background;
+      border-color: $--dk-task-item-action-border-color;
+      color: $--dk-task-item-action-color;
+      i {
+        color: $--dk-task-item-action-color;
+      }
+      &:hover {
+        background-color: $--dk-task-item-action-verify-hover-background;
+      }
+    }
   }
 
   .mo-task-plan {

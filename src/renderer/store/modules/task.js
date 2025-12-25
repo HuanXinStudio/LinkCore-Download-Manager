@@ -19,7 +19,8 @@ const state = {
   dataAccessStatuses: {},
   taskPriorities: {},
   taskSpeedSamples: {},
-  taskDisplayNames: {}
+  taskDisplayNames: {},
+  searchKeyword: ''
 }
 
 const getters = {
@@ -146,6 +147,9 @@ const mutations = {
     const next = { ...state.taskDisplayNames }
     delete next[gid]
     state.taskDisplayNames = next
+  },
+  UPDATE_TASK_SEARCH_KEYWORD (state, keyword) {
+    state.searchKeyword = `${keyword || ''}`
   }
 }
 
@@ -155,6 +159,9 @@ const actions = {
   },
   clearTaskDisplayName ({ commit }, gid) {
     commit('CLEAR_TASK_DISPLAY_NAME', gid)
+  },
+  updateTaskSearchKeyword ({ commit }, keyword) {
+    commit('UPDATE_TASK_SEARCH_KEYWORD', keyword)
   },
   changeCurrentList ({ commit, dispatch }, currentList) {
     commit('CHANGE_CURRENT_LIST', currentList)

@@ -3,6 +3,8 @@ export default {
   'advanced': 'Advanced',
   'video': 'Video',
   'lab': 'Lab',
+  'search-settings': 'Search Settings',
+  'no-settings-found': 'No settings found',
   'save': 'Save & Apply',
   'save-success-message': 'Preferences saved successfully',
   'save-fail-message': 'Preferences failed to save',

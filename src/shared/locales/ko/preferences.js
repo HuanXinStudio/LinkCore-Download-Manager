@@ -6,6 +6,7 @@ export default {
   'save-success-message': '설정을 성공적으로 저장했습니다',
   'save-fail-message': '설정을 저장하지 못했습니다',
   'discard': '취소',
+  'no-settings-found': '설정을 찾을 수 없습니다',
   'startup': '시작',
   'open-at-login': '로그인 시 실행',
   'keep-window-state': '창 크기 및 위치 기억',

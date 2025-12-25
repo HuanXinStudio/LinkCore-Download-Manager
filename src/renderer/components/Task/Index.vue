@@ -55,7 +55,7 @@
         <mo-task-actions />
       </el-header>
       <el-main class="panel-content">
-        <mo-task-list :category="categoryFilter" />
+        <mo-task-list :category="categoryFilter" :keyword="taskSearchQuery" />
       </el-main>
     </el-container>
     <div
@@ -170,7 +170,8 @@
       ...mapState('task', {
         taskList: state => state.taskList,
         selectedGidList: state => state.selectedGidList,
-        selectedGidListCount: state => state.selectedGidList.length
+        selectedGidListCount: state => state.selectedGidList.length,
+        taskSearchKeyword: state => state.searchKeyword
       }),
       ...mapState('app', {
         systemTheme: state => state.systemTheme
@@ -207,6 +208,14 @@
       title () {
         const subnav = this.subnavs.find((item) => item.key === this.status)
         return subnav.title
+      },
+      taskSearchQuery: {
+        get () {
+          return this.taskSearchKeyword
+        },
+        set (val) {
+          this.$store.dispatch('task/updateTaskSearchKeyword', val)
+        }
       }
     },
     watch: {
@@ -337,6 +346,15 @@
         }).catch(err => {
           console.log(err)
         })
+      },
+      handleFocusTaskSearch () {
+        // Since the top search bar is removed, we delegate focus to the floating bar search if needed,
+        // or just ignore if the intention was to focus the removed input.
+        // For now, let's try to activate the floating bar search if available via command
+        try {
+          commands.emit('floating-bar:search-open', true)
+          commands.emit('floating-bar:search-expanded', true)
+        } catch (e) {}
       },
       onStatusChange () {
         this.changeCurrentList()
@@ -635,6 +653,7 @@
       commands.on('batch-delete-task', this.handleBatchDeleteTask)
       commands.on('copy-task-link', this.handleCopyTaskLink)
       commands.on('show-task-info', this.handleShowTaskInfo)
+      commands.on('task:focus-search', this.handleFocusTaskSearch)
     },
     destroyed () {
       this.clearCategoryHoverCloseTimer()
@@ -649,6 +668,7 @@
       commands.off('batch-delete-task', this.handleBatchDeleteTask)
       commands.off('copy-task-link', this.handleCopyTaskLink)
       commands.off('show-task-info', this.handleShowTaskInfo)
+      commands.off('task:focus-search', this.handleFocusTaskSearch)
     }
   }
 </script>
@@ -674,6 +694,16 @@
 .task-category-select .el-select:hover,
 .task-category-select .el-select:focus-within {
   opacity: 1;
+}
+
+.task-search-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.task-search-bar .el-input {
+  max-width: 160px;
 }
 
 .subnav-small-screen.subnav-right {

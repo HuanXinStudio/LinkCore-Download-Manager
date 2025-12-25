@@ -6,6 +6,7 @@ export default {
   'save-success-message': '偏好設定儲存成功',
   'save-fail-message': '偏好設定儲存失敗',
   'discard': '捨棄',
+  'no-settings-found': '未找到任何設置',
   'startup': '啟動',
   'open-at-login': '開機自動啟動',
   'keep-window-state': '恢復上次退出時視窗的大小和位置',

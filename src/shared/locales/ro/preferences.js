@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Setările au fost salvate cu succes',
   'save-fail-message': 'Nu s-au putut salva setările',
   'discard': 'Renunţă',
+  'no-settings-found': 'Nu s-au găsit setări',
   'startup': 'Pornire',
   'open-at-login': 'Deschide la logare',
   'keep-window-state': 'Păstrați dimensiunea și poziția ferestrei la închiderea aplicaţiei',

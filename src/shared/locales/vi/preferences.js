@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Lưu cài đặt thành công',
   'save-fail-message': 'Lưu cài đặt thất bại',
   'discard': 'Loại bỏ',
+  'no-settings-found': 'Không tìm thấy cài đặt nào',
   'startup': 'Khởi động',
   'open-at-login': 'Mở khi đăng nhập',
   'keep-window-state': 'Giữ kích thước và vị trí của cửa sổ khi thoát',

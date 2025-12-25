@@ -3,14 +3,24 @@
     custom-class="panel task-detail-drawer"
     size="61.8%"
     v-if="gid"
-    :title="$t('task.task-detail-title')"
     :with-header="true"
-    :show-close="true"
+    :show-close="false"
     :destroy-on-close="true"
     :visible="visible"
     :before-close="handleClose"
     @closed="handleClosed"
   >
+    <div slot="title" class="task-detail-drawer-title">
+      <span>{{ $t('task.task-detail-title') }}</span>
+      <ul class="task-detail-drawer-actions">
+        <li @click.stop="handleMinimize">
+          <i class="el-icon-minus"></i>
+        </li>
+        <li @click.stop="handleHeaderClose">
+          <i class="el-icon-close"></i>
+        </li>
+      </ul>
+    </div>
     <div v-if="statusHintText" class="task-detail-hint">
       <el-tooltip
         effect="dark"
@@ -391,6 +401,12 @@
       }
     },
     methods: {
+      handleMinimize () {
+        this.handleClose()
+      },
+      handleHeaderClose () {
+        this.handleClose()
+      },
       handleClose (done) {
         window.removeEventListener('resize', this.handleAppResize)
         this.$store.dispatch('task/hideTaskDetail')
@@ -552,8 +568,24 @@
     }
   }
   .task-detail-drawer-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     &> span, &> ul {
       vertical-align: middle;
+    }
+  }
+  .task-detail-drawer-actions {
+    display: inline-flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    li {
+      cursor: pointer;
+      padding: 0 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
   }
   .action-wrapper {

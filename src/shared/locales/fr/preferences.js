@@ -6,6 +6,7 @@ export default {
   'save-success-message': 'Enregistrer les préférences avec succès',
   'save-fail-message': 'La sauvegarde des préférences a échoué',
   'discard': 'Annuler les changement',
+  'no-settings-found': 'Aucun paramètre trouvé',
   'startup': 'Démarrage',
   'open-at-login': 'Ouvrir à la connexion',
   'keep-window-state': 'Restaurez la taille et la position de la fenêtre',
