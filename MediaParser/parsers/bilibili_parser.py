@@ -261,7 +261,7 @@ def _extract_dash_resources(dash, qn, title, referer):
   return resources, total_size
 
 
-def parse_bilibili(url, qn=None, cookie=None, force_single=False):
+def parse_bilibili(url, qn=None, cookie=None, force_single=True):
   final_url = _resolve_redirect(url)
   bvid, aid, epid, ssid, media_id = _extract_ids(final_url)
   
@@ -1055,7 +1055,7 @@ def main(argv):
   url = argv[1]
   qn = None
   cookie = os.environ.get('BILI_COOKIE') or None
-  force_single = False
+  force_single = True
   i = 2
   while i < len(argv):
     a = argv[i]

@@ -274,14 +274,14 @@ def _extract_dash_resources(dash, qn, title, referer):
   return resources, total_size
 
 
-def parse_bilibili(url, qn=None, cookie=None):
+def parse_bilibili(url, qn=None, cookie=None, force_single=True):
   final_url = _resolve_redirect(url)
   bvid, aid, epid, ssid, media_id = _extract_ids(final_url)
   
   is_bangumi = epid or ssid
   is_collection = media_id
   
-  if is_collection:
+  if is_collection and not force_single:
     return _parse_media_collection(final_url, media_id, qn, cookie)
   
   if is_bangumi:
@@ -299,7 +299,7 @@ def parse_bilibili(url, qn=None, cookie=None):
     raise ValueError(str(view_message or view_code))
   
   ubs = data.get('ubs')
-  if ubs:
+  if ubs and not force_single:
     try:
       return _parse_video_collection(final_url, bvid, aid, qn, cookie)
     except ValueError as e:
@@ -309,7 +309,7 @@ def parse_bilibili(url, qn=None, cookie=None):
         raise
   
   ugc_season = data.get('ugc_season')
-  if ugc_season:
+  if ugc_season and not force_single:
     try:
       return _parse_ugc_season(final_url, bvid, aid, qn, cookie)
     except ValueError as e:
